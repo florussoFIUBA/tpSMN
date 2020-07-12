@@ -14,3 +14,4 @@ Tormenta es un script desarrollado en Python que permite recibir distinta inform
 -Tkinter  
 -Pillow  
 -Geocoder  
+-Geopy
