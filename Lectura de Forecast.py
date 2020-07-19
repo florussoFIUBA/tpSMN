@@ -36,4 +36,6 @@ with open('Pronostico 3 dias.json', encoding="utf8") as f, open('Alertas.json', 
                 print(f"Hora: {q['hour']}")
                 print(f"Descripcion: {q['description']}")
                 contador += 1
+    if(encontrado is False):
+        print("No se han encontrado alertas para su ciudad.")
 
