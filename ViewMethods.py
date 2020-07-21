@@ -5,6 +5,8 @@ from tkinter import filedialog
 from tkinter import messagebox
 from PIL import Image
 import matplotlib
+import matplotlib.pyplot as plt
+import datetime
 import MainMenu
 
 
@@ -37,6 +39,16 @@ def ReturnMainColors(image):
     imgToPil = Image.fromarray(image)
     return imgToPil.getcolors()
 
+
+'''
+Crea dataFramework con los datos del archivo csv
+'''
+def crearCsvDataFrame(archivo):
+    df = pd.read_csv(archivo, index_col=False)
+    
+    return df
+
+
 def ReturnInfo(csvDataFrame, columnToSearch, period):
     csvDataFrame['Date'] = pd.to_datetime(csvDataFrame.Date)
     pastYears = csvDataFrame.set_index('Date').last(period)
@@ -49,6 +61,64 @@ def ShowMaxValues(columnName, dataType):
        }
     df = pd.DataFrame(Data,columns=['Date','Unemployment_Rate'])
     messagebox.showinfo(message=f"{dataType}: {ReturnInfo(df, columnName, '5Y')}")
+
+'''
+Muestra grafico con el promedio de temperaturas maximas y minimas anuales durante
+el periodo de tiempo especificado por (periodo)
+'''
+def crearGraficoTemperaturas(df, ultimosAnios):
+    listaAnio=[]
+    listaTempMax=[]
+    listaTempMin=[]
+    
+    df['Date'] = pd.to_datetime(df['Date']).dt.date
+    fechaHoy=(pd.to_datetime('today')).date()
+    
+    for i in range(ultimosAnios, -1, -1):
+        
+        fechaInicio=fechaHoy.replace(year=fechaHoy.year-i, month=1, day =1)
+        fechaFin=fechaHoy.replace(year=fechaHoy.year-i, month=12, day=31)
+        listaAnio.append(fechaInicio.year)
+        listaTempMax.append(df.loc[((df['Date']<=fechaFin) & (df['Date']>=fechaInicio)), 'Max Temperature'].mean())
+        listaTempMin.append(df.loc[((df['Date']<=fechaFin) & (df['Date']>=fechaInicio)), 'Min Temperature'].mean())
+       
+
+    dfPromedioTemp=pd.DataFrame({'Temperatura Maxima':listaTempMax, 'Temperatura Minima':listaTempMin}, index=listaAnio)
+    
+
+    graficoTemperatura=dfPromedioTemp.plot.bar(title='Promedio de temperaturas anuales')
+    graficoTemperatura.set_xlabel("Año")
+    graficoTemperatura.set_ylabel("Promedio")
+    plt.show()
+    
+   
+'''
+Show average yearly humidity values' plot of the last (lastYears) years, from (lastYears)
+to (fechaHoy) year, with the dataFramework (df) information
+'''
+
+def crearGraficoHumedad(df, ultimosAnios):
+    listaAnio=[]
+    listaHumedad=[]
+    df['Date'] = pd.to_datetime(df['Date']).dt.date
+    fechaHoy=(pd.to_datetime('today')).date()
+    
+    for i in range(ultimosAnios, -1, -1):
+        
+        fechaInicio=fechaHoy.replace(year=fechaHoy.year-i, month=1, day =1)
+        fechaFin=fechaHoy.replace(year=fechaHoy.year-i, month=12, day=31)
+        listaAnio.append(fechaInicio.year)
+        listaHumedad.append(df.loc[((df['Date']<=fechaFin) & (df['Date']>=fechaInicio)), 'Relative Humidity'].mean())
+        
+
+    dfPromedioHum=pd.DataFrame({'Promedio humedad':listaHumedad}, index=listaAnio)
+    
+
+    graficoHum=dfPromedioHum.plot.bar(title='Promedio de humedad')
+    graficoHum.set_xlabel("Año")
+    graficoHum.set_ylabel("Promedio")
+    plt.show()
+
 
 def ShowAlerts():
     imagePath = filedialog.askopenfilename(title="Seleccione la imagen a analizar", filetypes=DEFAULT_EXTENSIONS)
