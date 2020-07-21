@@ -1,33 +1,26 @@
 import json
+import ConexionAPI
 
-pueblos_1 = ["Tunuyan","San Rafael","Punta de Vacas","Uspallata","Mendoza","San Martín","Malargüe","San Carlos"]
-pueblos_2 = ["Zapala","Chapelco","Villa la Angostura","San Martín de Los Andes"]
-pueblos_3 = ["El Bolsón","San Carlos de Bariloche"]
-pueblos_4 = ["San Juan"]
-pueblos_5 = ["Esquel"]
-pueblos_6 = ["San Rafael","Malargüe","San Carlos"]
-pueblos_7 = ["San Carlos de Bolívar","Pinamar","Azul","9 de Julio","Maipú","Las Flores","Olavarría","Tandil","Coronel Pringles","Balcarce","Mar del Plata","Pigüé","Monte Hermoso","Tres Arroyos","Miramar","Bahía Blanca","Villa Gesell","Benito Juárez","Necochea"]
-pueblos_8 = ["Victorica","Eduardo Castex","25 de Mayo","Santa Rosa","General Acha","General Pico","Intendente Alvear"]
-pueblos_9 = ["General Alvear","Malargüe"]
-pueblos_10 = ["Neuquén","Zapala","Cutral Co"]
-pueblos_11 = ["Río Colorado","San Antonio Oeste","Viedma","El Bolsón","San Carlos de Bariloche","Maquinchao"]
-pueblos_12 = ["Quilmes","Punta Indio","La Plata","Avellaneda","San Isidro"]
+un_dia = ConexionAPI.obtenerObjetoJSON("https://ws.smn.gob.ar/map_items/forecast/1")
+dos_dias = ConexionAPI.obtenerObjetoJSON("https://ws.smn.gob.ar/map_items/forecast/2")
+tres_dias = ConexionAPI.obtenerObjetoJSON("https://ws.smn.gob.ar/map_items/forecast/3")
+alertas = ConexionAPI.obtenerObjetoJSON("https://ws.smn.gob.ar/alerts/type/AL")
+lista = [un_dia,dos_dias,tres_dias]
 
-regiones = {"Zona cordillerana y precordillerana de Mendoza": pueblos_1,"Zona cordillerana de Neuquén": pueblos_2,"Zona cordillerana de Río Negro": pueblos_3,"Zona cordillerana del sur de San Juan": pueblos_4,"Zona cordillerana del norte de Chubut": pueblos_5,"Zona cordillerana del centro y sur de Mendoza": pueblos_6,"Centro y sur de la provincia de Buenos Aires": pueblos_7,"La Pampa": pueblos_8,"Sur de Mendoza": pueblos_9,"Oeste, centro y este de Neuquén": pueblos_10,"Oeste, centro y este de Río Negro": pueblos_11,"Río de la Plata exterior": pueblos_12}
-
-ciudad = input("Ingrese su ciudad: ")
-with open('Pronostico 3 dias.json', encoding="utf8") as f, open('Alertas.json', encoding="utf8") as a:
-    data = json.load(f)
-    for p in data:
+def verPronostico(objJson,ciudad,provincia):
+    for p in objJson:
         if(p["name"] == ciudad):
-            print("Pronostico dentro de tres dias:")
+            provincia = p["province"]
+            print(f"Pronostico dentro de {lista.index(objJson)+1} dia(s):")
             print(f"Por la mañana, el clima es: {p['weather']['morning_desc']}. La temperatura es de {p['weather']['morning_temp']}°C.")
             print(f"Por la tarde, el clima es: {p['weather']['afternoon_desc']}. La temperatura es de {p['weather']['afternoon_temp']}°C.")
-    alertas = json.load(a)
+    mostrarAlertas(provincia)
+        
+def mostrarAlertas(provincia):
     contador = 1
     for q in alertas:
         for i in (q["zones"]).values():
-            encontrado = ciudad in regiones[i]
+            encontrado = provincia in i
             if(encontrado is True):
                 print(f"Alerta n°{contador}:")
                 print(f"Titulo: {q['title']}")
@@ -35,7 +28,37 @@ with open('Pronostico 3 dias.json', encoding="utf8") as f, open('Alertas.json', 
                 print(f"Fecha: {q['date']}")
                 print(f"Hora: {q['hour']}")
                 print(f"Descripcion: {q['description']}")
+                print(f"Zona: {i}")
+                print("- - - - - - - - - - - - -")
                 contador += 1
+    print("Las alertas involucran su provincia, pero pueden no involucrar su ciudad.")
     if(contador == 1):
-        print("No se han encontrado alertas para su ciudad.")
+        print("No se han encontrado alertas para su provincia.")
+    
+def menu():
+    print("Bienvenido al menú de pronósticos del Servicio Meteorologico Nacional")
+    opcion = int(input("Ver pronostico y alertas para: \n1) Un día\n2) Dos días\n3) Tres días\n4) Salir\n"))
+    while(opcion != 1 and opcion != 2 and opcion != 3 and opcion != 4):
+        print("Opcion inválida")
+        opcion = int(input("1) Un día\n2) Dos días\n3) Tres días\n4) Salir\n"))
+    fin = "y"
+    provincia = ""
+    while(fin != "n"):
+        if(opcion == 1):
+            ciudad = input("Ingrese su ciudad: ")
+            verPronostico(un_dia,ciudad,provincia)
+            fin = "n"
+        if(opcion == 2):
+            ciudad = input("Ingrese su ciudad: ")
+            verPronostico(dos_dias,ciudad,provincia)
+            fin = "n"
+        if(opcion == 3):
+            ciudad = input("Ingrese su ciudad: ")
+            verPronostico(tres_dias,ciudad,provincia)
+            fin = "n"
+        if(opcion == 4):
+            fin = "n"
+def main():
+    menu()
+main()
 

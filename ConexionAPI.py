@@ -33,7 +33,6 @@ def obtenerObjetoJSON(url):
     
     if info is not None:
         objJson=json.loads(info)
-        print(objJson)
     else:
         objJson= None
     
