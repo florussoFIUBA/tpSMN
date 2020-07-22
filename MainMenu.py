@@ -2,6 +2,8 @@ import tkinter as tk
 import ViewMethods
 import LocationMethods
 
+
+
 def CreateMainWindow():
     mainWindow = tk.Tk()
     mainWindow.geometry("300x340")
@@ -22,15 +24,25 @@ def CreateMainWindow():
 #GRAPHICS WINDOW
 def CreateSecondaryWindow():
     secondaryWindow = tk.Tk()
-    secondaryWindow.geometry("300x200")
-    secondaryWindow("Seleccione una opción")
-    btn_OptionOne = tk.Button(secondaryWindow, text = "Promedio de temperaturas anuales (5 años)")
+    secondaryWindow.geometry("300x300")
+    secondaryWindow.title("Seleccione una opción")
+    etiquetaArchivo = tk.Label(secondaryWindow, text = "Seleccione el archivo csv")
+    etiquetaArchivo.pack(pady = 10)
+    entradaArchivo = tk.Entry(secondaryWindow)
+    entradaArchivo.pack()
+    btnAbrir = tk.Button(secondaryWindow, text = "Seleccionar", command = lambda:entradaArchivo.insert(0,ViewMethods.seleccionarArchivoCsv()))
+    btnAbrir.pack()
+    etiquetaPeriodo = tk.Label(secondaryWindow, text = "Ingrese el período en años a graficar")
+    etiquetaPeriodo.pack(pady = 10)
+    entradaPeriodo = tk.Entry(secondaryWindow)
+    entradaPeriodo.pack()
+    btn_OptionOne = tk.Button(secondaryWindow, text = "Promedio de temperaturas anuales", command = lambda:ViewMethods.crearGraficoTemperaturas(ViewMethods.crearCsvDataFrame(entradaArchivo.get()), entradaPeriodo.get()))
     btn_OptionOne.pack(pady = 10)  
-    btn_OptionTwo = tk.Button(secondaryWindow, text = "Promedio de humedad (5 años)")
+    btn_OptionTwo = tk.Button(secondaryWindow, text = "Promedio de humedad", command = lambda:ViewMethods.crearGraficoHumedad(ViewMethods.crearCsvDataFrame(entradaArchivo.get()), entradaPeriodo.get()))
     btn_OptionTwo.pack(pady = 10)  
-    btn_OptionThree = tk.Button(secondaryWindow, text = "Milímetros máximos de lluvia (5 años)", command= lambda : ViewMethods.ShowMaxValues('Unemployment_Rate', "Milímetros máximos de lluvia"))
+    btn_OptionThree = tk.Button(secondaryWindow, text = "Milímetros máximos de lluvia", command= lambda : ViewMethods.ShowMaxValues(ViewMethods.crearCsvDataFrame(entradaArchivo.get()), 'Precipitation', 'Milímetros máximos de lluvia', entradaPeriodo.get()))
     btn_OptionThree.pack(pady = 10)  
-    btn_OptionFour = tk.Button(secondaryWindow, text = "Temperatura máxima (5 años)")
+    btn_OptionFour = tk.Button(secondaryWindow, text = "Temperatura máxima", command= lambda : ViewMethods.ShowMaxValues(ViewMethods.crearCsvDataFrame(entradaArchivo.get()), 'Max Temperature', 'Temperatura máxima (en °C)', entradaPeriodo.get()))
     btn_OptionFour.pack(pady = 10)
     tk.mainloop()
 
