@@ -8,7 +8,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import datetime
 import MainMenu
-
+import numpy as np
 
 DEFAULT_EXTENSIONS = (
     ("PNG files", "*.png"),
@@ -16,29 +16,77 @@ DEFAULT_EXTENSIONS = (
     ("BMP files", "*.bmp"),
     ("JPEG files", "*.jpeg")
 )
-DEFAULT_PRONOSTICS = [
-    ("TORMENTAS DE MUCHA LLUVIA",[(238, 17, 51),(204, 0, 17), (170,0,17), (153, 0, 0)]),
-    ("TORMENTAS FUERTES CON GRANIZO",[(187, 0, 2),(221, 0, 153), (238,0,238), (204, 0, 204), (170, 0, 187), (153, 0, 153), (255, 255, 255), (238, 238, 238), (204,238,238), (170,238,204), (153, 221, 204), (136, 221, 187)])
+
+DEFAULT_LOCATIONS = [
+    ["SANTA FE - PARANA", 426, 565, 42, 180],
+    ["CORDOBA", 319, 422, 54, 187],
+    ["SAN LUIS", 259, 318, 54, 126],
+    ["MENDOZA", 158, 253, 158, 296],
+    ["NEUQUEN", 134, 224, 356, 456],
+    ["SANTA ROSA", 230, 387, 298, 358],
+    ["SANTA FE - MERCEDES", 445, 636, 0, 38],
+    ["SANTA FE - PERGAMINO", 455, 533, 235, 280],
+    ["CABA - LA PLATA - GBA", 506, 585, 235, 280],
+    ["BAHIA BLANCA", 388, 446, 381, 438],
+    ["VIEDMA", 362, 455, 451, 502]
 ]
 
-def CropImage(imagePath):
+def RecortarImagen(imagePath):
+    '''Recorta la imagen que se trae por path
+    Pre: Recibe el path de una imagen
+    Post: Retorna la imagen recortada y convertida a RGB
+    '''
     image = cv2.imread(imagePath)
     croppedImage = image[15:555, 21:755]
-    return croppedImage
+    return cv2.cvtColor(croppedImage, cv2.COLOR_BGR2RGB)
 
-def ReturnAlerts(mainColors):
-    pronostics = ""
-    for colorDict in mainColors:
-        for colorList in DEFAULT_PRONOSTICS:
-            if(colorList[1].count(colorDict[1])>0):
-                if(colorList[0] not in pronostics):
-                    pronostics+=f"{colorList[0]}\n"
-    return pronostics
+def DetectarColor(rgbColor):
+    '''Detecta si el color está en el rango de los rojos o púrpuras y devuelve el pronóstico correspondiente
+    Pre: Recibe un color en formato RGB
+    Post: Devuelve el pronóstico o una string vacía en caso de no encontrarlo o de que el color sea nulo
+    '''
+    try:
+        if(rgbColor!='T'):
+            if(rgbColor[2]>-1 and rgbColor[2]<101 and rgbColor[1]>-1 and rgbColor[1]<101 and rgbColor[0]>149):
+                return "TORMENTAS DE MUCHA LLUVIA"
+            elif(rgbColor[2]>149 and rgbColor[1]>-1 and rgbColor[1]<101 and rgbColor[0]>149):
+                return "TORMENTAS FUERTES CON GRANIZO"
+        return ""
+    except Exception as ex:
+        messagebox.showerror("Error", ex)
+        return ""
 
-def ReturnMainColors(image):
-    imgToPil = Image.fromarray(image)
-    return imgToPil.getcolors()
+def RetornarLocalizacion(x, y):
+    '''Devuelve la zona específicada en la constante a través de una comparación en rangos de coordenadas
+    Pre: Recibe las coordenadas x y
+    Post: Devuelve la zona o en caso de no encontrarla, devuelve Zona desconocida
+    '''
+    for region in DEFAULT_LOCATIONS:
+        if((x>region[1] and x<region[2]) and (y>region[3] and y<region[4])):
+            return region[0]
+    return "Zona desconocida" 
 
+def TraerAlertas(image):
+    '''Retorna las alertas en un string formateado
+    Pre: Recibe una imagen en formato array
+    Post: Devuelve una string conteniendo las alertas en las distintas zonas
+    '''
+    try:
+        pronosticosTotales = []
+        imgToPil = Image.fromarray(image).convert('RGB')
+        width, height = imgToPil.size
+        for x in range(width):
+            for y in range(height):
+                currentColor = imgToPil.getpixel((x, y))
+                pronostico = DetectarColor(currentColor)
+                if (pronostico != ""):
+                    location = RetornarLocalizacion(x, y)
+                    pronosticoZona = f"{pronostico} en {RetornarLocalizacion(x, y)}"
+                    if(pronosticoZona not in pronosticosTotales):
+                        pronosticosTotales.append(pronosticoZona)
+        return '\n'.join(pronosticosTotales)
+    except Exception as ex:
+        return ex
 
 '''
 Crea dataFramework con los datos del archivo csv
@@ -120,12 +168,14 @@ def crearGraficoHumedad(df, ultimosAnios):
     plt.show()
 
 
-def ShowAlerts():
+def MostrarAlertas():
+    '''Pide al usuario seleccionar un archivo de imagen, luego ejecuta el proceso y muestra las alertas para la imagen de radar ingresada
+    '''
     imagePath = filedialog.askopenfilename(title="Seleccione la imagen a analizar", filetypes=DEFAULT_EXTENSIONS)
     while len(imagePath) == 0:
         messagebox.showerror("Error", "Debe ingresar un archivo para procesar.")
         imagePath = filedialog.askopenfilename(title="Seleccione la imagen a analizar", filetypes=DEFAULT_EXTENSIONS)
-    messagebox.showinfo("Alertas",ReturnAlerts(ReturnMainColors(CropImage(imagePath))))
+    messagebox.showinfo("Alertas",TraerAlertas(RecortarImagen(imagePath)))
 
 
 

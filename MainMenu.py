@@ -15,7 +15,7 @@ def CreateMainWindow():
     btn_OptionThree.pack(pady = 10)
     btn_OptionFour = tk.Button(mainWindow, text = "Pronóstico extendido y alertas")
     btn_OptionFour.pack(pady = 10)
-    btn_OptionFive = tk.Button(mainWindow, text = "Analizar imagen", command=ViewMethods.ShowAlerts)
+    btn_OptionFive = tk.Button(mainWindow, text = "Analizar imagen", command=ViewMethods.MostrarAlertas)
     btn_OptionFive.pack(pady = 10)
     tk.Label(mainWindow, text = f"Ciudad actual:\n{LocationMethods.ReturnAddress()}").pack()
     tk.mainloop()
