@@ -4,7 +4,7 @@ import LocationMethods
 
 
 
-def CreateMainWindow():
+def CrearVentanaPrincipal():
     mainWindow = tk.Tk()
     mainWindow.geometry("300x340")
     mainWindow.title("Tormenta")
@@ -13,7 +13,7 @@ def CreateMainWindow():
     btn_OptionOne.pack(pady = 10)    
     btn_OptionTwo = tk.Button(mainWindow, text = "Listar todas las alertas")
     btn_OptionTwo.pack(pady = 10)
-    btn_OptionThree = tk.Button(mainWindow, text = "Mostrar gráficos", command = CreateSecondaryWindow)
+    btn_OptionThree = tk.Button(mainWindow, text = "Mostrar gráficos", command = CrearVentanaSecundaria)
     btn_OptionThree.pack(pady = 10)
     btn_OptionFour = tk.Button(mainWindow, text = "Pronóstico extendido y alertas")
     btn_OptionFour.pack(pady = 10)
@@ -22,7 +22,7 @@ def CreateMainWindow():
     tk.Label(mainWindow, text = f"Ciudad actual:\n{LocationMethods.ReturnAddress()}").pack()
     tk.mainloop()
 
-def CreateSecondaryWindow():
+def CrearVentanaSecundaria():
     secondaryWindow = tk.Tk()
     secondaryWindow.geometry("300x300")
     secondaryWindow.title("Seleccione una opción")
@@ -47,7 +47,7 @@ def CreateSecondaryWindow():
     tk.mainloop()
 
 def main():
-    CreateMainWindow()
+    CrearVentanaPrincipal()
 
 if __name__ == "__main__":
     main()
