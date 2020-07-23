@@ -1,17 +1,17 @@
 import cv2
 import pandas as pd
-import LocationMethods
+import MetodosLocalizacion
 from tkinter import filedialog
 from tkinter import messagebox
 from tkinter import ttk
 from PIL import Image
+import tkinter as tk
 import matplotlib
 import matplotlib.pyplot as plt
 import os
 import datetime
-import MainMenu
 import numpy as np
-
+import tkinter.scrolledtext as tkscrolled
 
 DEFAULT_EXTENSIONS = (
     ("PNG files", "*.png"),
@@ -45,6 +45,19 @@ def RecortarImagen(imagePath):
     image = cv2.imread(imagePath)
     croppedImage = image[15:555, 21:755]
     return cv2.cvtColor(croppedImage, cv2.COLOR_BGR2RGB)
+
+def MostrarAlertasEnVentana(texto):
+    if(texto!=""):
+        txtBoxWitdth, txtBoxHeight = 200, 200
+        ventanaAlertas = tk.Tk()
+        ventanaAlertas.geometry("250x250")
+        ventanaAlertas.title("Alertas")
+        txtBoxScroll = tkscrolled.ScrolledText(master = ventanaAlertas, width = txtBoxWitdth, height = txtBoxHeight, wrap='word')
+        txtBoxScroll.insert(index = 1.0, chars = texto)
+        txtBoxScroll.pack()
+        ventanaAlertas.mainloop()
+    else:
+        messagebox.showinfo("Alertas", "No se registraron alertas")
 
 def DetectarColor(rgbColor):
     '''Detecta si el color está en el rango de los rojos o púrpuras y devuelve el pronóstico correspondiente

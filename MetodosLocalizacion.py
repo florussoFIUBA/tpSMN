@@ -1,12 +1,12 @@
 import geocoder
 from geopy.geocoders import Nominatim
 
-def ReturnActualLocation():
+def RetornarLocalizacionActual():
     myLocation = geocoder.ip('me')
     return myLocation.latlng
 
-def ReturnAddress():
-    latLong = ReturnActualLocation()
+def RetornarLocalizacion():
+    latLong = RetornarLocalizacionActual()
     geolocator = Nominatim(user_agent="tp2")
     location = geolocator.reverse(f"{latLong[0]}, {latLong[1]}")
     return location.address.split(',')[2]
