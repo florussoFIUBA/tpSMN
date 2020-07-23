@@ -3,12 +3,15 @@ import pandas as pd
 import LocationMethods
 from tkinter import filedialog
 from tkinter import messagebox
+from tkinter import ttk
 from PIL import Image
 import matplotlib
 import matplotlib.pyplot as plt
+import os
 import datetime
 import MainMenu
 import numpy as np
+
 
 DEFAULT_EXTENSIONS = (
     ("PNG files", "*.png"),
@@ -30,7 +33,10 @@ DEFAULT_LOCATIONS = [
     ["BAHIA BLANCA", 388, 446, 381, 438],
     ["VIEDMA", 362, 455, 451, 502]
 ]
-
+DEFAULT_CSV_EXTENSIONS = (
+    ("CSV files", "*.csv"),
+    
+)
 def RecortarImagen(imagePath):
     '''Recorta la imagen que se trae por path
     Pre: Recibe el path de una imagen
@@ -93,7 +99,6 @@ Crea dataFramework con los datos del archivo csv
 '''
 def crearCsvDataFrame(archivo):
     df = pd.read_csv(archivo, index_col=False)
-    
     return df
 
 
@@ -102,13 +107,11 @@ def ReturnInfo(csvDataFrame, columnToSearch, period):
     pastYears = csvDataFrame.set_index('Date').last(period)
     return pastYears[columnToSearch].max()
 
-def ShowMaxValues(columnName, dataType):
-    ##THIS WILL BE REPLACED WITH CSV PARSING METHOD
-    Data = {'Date': ['2017-04-03','2020-04-03','2019-04-03','2018-04-03','2016-04-03','2015-04-03','2014-04-03','2013-04-03','2012-04-03','2011-04-03'],
-        'Unemployment_Rate': [9.8,12,8,7.2,6.9,7,6.5,6.2,5.5,6.3]
-       }
-    df = pd.DataFrame(Data,columns=['Date','Unemployment_Rate'])
-    messagebox.showinfo(message=f"{dataType}: {ReturnInfo(df, columnName, '5Y')}")
+def ShowMaxValues(df, columnName, dataType, periodo):
+    '''Imprime la información basado en un dataframe, nombre de columba y período en años
+    '''
+    periodo = str(periodo)+"Y"
+    messagebox.showinfo(message=f"{dataType}: {ReturnInfo(df, columnName, periodo)}")
 
 '''
 Muestra grafico con el promedio de temperaturas maximas y minimas anuales durante
@@ -118,7 +121,7 @@ def crearGraficoTemperaturas(df, ultimosAnios):
     listaAnio=[]
     listaTempMax=[]
     listaTempMin=[]
-    
+    ultimosAnios=int(ultimosAnios)
     df['Date'] = pd.to_datetime(df['Date']).dt.date
     fechaHoy=(pd.to_datetime('today')).date()
     
@@ -148,6 +151,7 @@ to (fechaHoy) year, with the dataFramework (df) information
 def crearGraficoHumedad(df, ultimosAnios):
     listaAnio=[]
     listaHumedad=[]
+    ultimosAnios=int(ultimosAnios)
     df['Date'] = pd.to_datetime(df['Date']).dt.date
     fechaHoy=(pd.to_datetime('today')).date()
     
@@ -178,4 +182,11 @@ def MostrarAlertas():
     messagebox.showinfo("Alertas",TraerAlertas(RecortarImagen(imagePath)))
 
 
+def seleccionarArchivoCsv():
+    csvDireccion = filedialog.askopenfilename(title="Seleccione el archivo csv", filetypes=DEFAULT_CSV_EXTENSIONS)
+    while (len(csvDireccion) == 0 or (os.getcwd() != os.path.dirname(os.path.abspath(csvDireccion))) ):
+        messagebox.showerror("Error", "Debe ingresar un archivo para procesar\nDebe estar en la misma carpeta que el archivo de programa")
+        csvDireccion = filedialog.askopenfilename(title="Seleccione el archivo csv a analizar", filetypes=DEFAULT_CSV_EXTENSIONS)
+
+    return os.path.basename(csvDireccion)
 

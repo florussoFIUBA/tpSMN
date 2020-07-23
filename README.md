@@ -17,3 +17,5 @@ Tormenta es un script desarrollado en Python que permite recibir distinta inform
 -Geopy
 -Responses
 -Datetime
+## Librerías que deben instalarse por fuera de pip
+tkinter: sudo apt-get install python3-tk
