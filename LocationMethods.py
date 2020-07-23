@@ -10,7 +10,7 @@ def ReturnAddress():
     latLong = ReturnActualLocation()
     geolocator = Nominatim(user_agent="tp2")
     location = geolocator.reverse(f"{latLong[0]}, {latLong[1]}")
-    return location.address.split(',')[4]
+    return location.address.split(',')[2]
 
 '''
 Recibe un string con la localidad, provincia, pais.
