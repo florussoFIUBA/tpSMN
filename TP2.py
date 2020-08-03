@@ -145,6 +145,14 @@ def RetornarLocalizacionActual():
 def RetornarLocalizacion(indiceLocalidad):
     '''Recibe un índice de ubicación, el cual es 3 para la provincia y 2 para la ciudad.
     Devuelve la 'ciudad' o 'provincia' donde se encuentra el usuario, respectivamente.
+    Glosario de índices:
+    0: Número aproximado en la calle
+    1: Nombre de la calle
+    2: Ciudad o barrio
+    3: Provincia
+    4: Comuna o barrio/zona
+    5: Código postal aproximado
+    6: País
     PRE: Recibe la localidad que puede ser "ciudad" o "provincia"
     POST: Devuelve el nombre de la provincia o ciudad (o barrio) en la que se encuentra el usuario
     '''
