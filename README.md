@@ -1,7 +1,7 @@
 # Tormenta
 Tormenta es un script desarrollado en Python que permite recibir distinta información del servicio meteorológico nacional. Incluye las siguientes funcionalidades:  
 1- Conectarse al Web Service del Servicio Meteorológico Nacional  
-2- Listar las alertas que se originen en la geolocalización actual o en una ingresada por el usuario
+2- Listar las alertas que se originen en la geolocalización actual o en una ingresada por el usuario  
 3- Listar todas las alertas a nivel nacional  
 4- A través de un CSV y un período provisto, permite mostrar la temperatura máxima, los milímetros máximos de lluvia, graficar en función de temperaturas anuales y de humedad  
 5- Informar el pronóstico extendido y en caso de haber, la alerta meteorológica para la ciudad ingresada.  
