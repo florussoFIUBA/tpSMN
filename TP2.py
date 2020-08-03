@@ -1,5 +1,4 @@
 import tkinter as tk
-import ViewMethods
 import json
 import requests
 import geocoder
@@ -238,30 +237,20 @@ def RetornarLocalizacionActual():
     myLocation = geocoder.ip('me')
     return myLocation.latlng
 
-def RetornarLocalizacion(localidad):
-    '''Recibe una localidad, puede ser 'ciudad' o 'provincia'.
-    Devuelve la 'ciudad' o 'provincia' donde se encuentra el usuario, respectivamente.
+def RetornarLocalizacion(indice):
+    '''En la lista location.address de geolocator, devuelve el elemento cuyo indice es el parametro.
     '''
     try:
         latLong = RetornarLocalizacionActual()
         geolocator = Nominatim(user_agent="tp2")
         location = geolocator.reverse(f"{latLong[0]}, {latLong[1]}")
-        if(localidad == 'provincia'):
-            provincia = location.address.split(',')[3]
-            usuario_lista = []
-            for i in provincia:
-                usuario_lista.append(i)
-            usuario_lista.remove(" ")
-            provincia = "".join(usuario_lista)
-            return provincia
-        elif(localidad == 'ciudad'):
-            ciudad = location.address.split(',')[2]
-            usuario_lista = []
-            for i in ciudad:
-                usuario_lista.append(i)
-            usuario_lista.remove(" ")
-            ciudad = "".join(usuario_lista)
-            return ciudad
+        localidad = location.address.split(',')[indice]
+        usuario_lista = []
+        for i in localidad:
+            usuario_lista.append(i)
+        usuario_lista.remove(" ")
+        localidad = "".join(usuario_lista)
+        return localidad
     except Exception as ex:
         return ex
     
@@ -339,7 +328,7 @@ def MenuTormenta():
     ventanaTormenta.geometry("300x340")
     ventanaTormenta.title("Tormenta")
     tk.Label(ventanaTormenta, text="Bienvenidos a Tormenta").pack()
-    btn_OpcionUno = tk.Button(ventanaTormenta, text = "Listar alertas por localización", command = lambda:TodasAlertas(RetornarLocalizacion('provincia'),""))
+    btn_OpcionUno = tk.Button(ventanaTormenta, text = "Listar alertas por localización", command = lambda:TodasAlertas(RetornarLocalizacion(3),""))
     btn_OpcionUno.pack(pady = 10)    
     btn_OpcionDos = tk.Button(ventanaTormenta, text = "Listar todas las alertas", command = lambda:TodasAlertas('0',""))
     btn_OpcionDos.pack(pady = 10)
@@ -349,7 +338,7 @@ def MenuTormenta():
     btn_OpcionCuatro.pack(pady = 10)
     btn_OptionFive = tk.Button(ventanaTormenta, text = "Analizar imagen", command=MostrarAlertasRadar)
     btn_OptionFive.pack(pady = 10)
-    tk.Label(ventanaTormenta, text = RetornarLocalizacion('ciudad')).pack()
+    tk.Label(ventanaTormenta, text = RetornarLocalizacion(2)).pack()
     tk.mainloop()
 
 def CrearVentanaEstadisticas():
