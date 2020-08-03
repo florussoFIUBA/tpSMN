@@ -143,10 +143,10 @@ def RetornarLocalizacionActual():
     return miLocalizacion.latlng
 
 def RetornarLocalizacion(indiceLocalidad):
-    '''Recibe una localidad, puede ser 'ciudad' o 'provincia'.
+    '''Recibe un índice de ubicación, el cual es 3 para la provincia y 2 para la ciudad.
     Devuelve la 'ciudad' o 'provincia' donde se encuentra el usuario, respectivamente.
     PRE: Recibe la localidad que puede ser "ciudad" o "provincia"
-    POST: Devuelve el nombre de la provincia o ciudad en la que se encuentra el usuario
+    POST: Devuelve el nombre de la provincia o ciudad (o barrio) en la que se encuentra el usuario
     '''
     try:
         latLong = RetornarLocalizacionActual()
