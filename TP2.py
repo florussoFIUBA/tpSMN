@@ -1,5 +1,4 @@
 import tkinter as tk
-import ViewMethods
 import json
 import requests
 import geocoder
@@ -43,14 +42,14 @@ EXTENSIONES_CSV = (
 headers = {'Content-Type':'application/json',
             'Authorization':''}
 
-def RecortarImagen(rutaImagen):
+def RecortarImagen(rutaImagen, pixInicial, pixFinal):
     '''Recorta la imagen que se trae por path
-    Pre: Recibe el path de una imagen
+    Pre: Recibe el path de una imagen y las coordenadas para recortarla
     Post: Retorna la imagen recortada y convertida a RGB
     '''
     try:
         imagen = cv2.imread(rutaImagen)
-        imagenRecortada = imagen[15:555, 21:755]
+        imagenRecortada = imagen[pixInicial[0]:pixInicial[1], pixFinal[0]:pixFinal[1]]
         return cv2.cvtColor(imagenRecortada, cv2.COLOR_BGR2RGB)
     except Exception as ex:
         return ex        
@@ -83,8 +82,8 @@ def RetornarLocalizacionDePixels(x, y):
 
 def TraerAlertasDeImagen(imagen):
     '''Retorna las alertas en un string formateado
-    Pre: Recibe una imagen en formato array
-    Post: Devuelve una string conteniendo las alertas en las distintas zonas
+    PRE: Recibe una imagen en formato array
+    POST: Devuelve una string conteniendo las alertas en las distintas zonas
     '''
     try:
         if(not isinstance(imagen, Exception)):
@@ -106,9 +105,8 @@ def TraerAlertasDeImagen(imagen):
     except Exception as ex:
         return ex
 
-
 def CrearCsvDataFrame(archivo):
-    '''Crea dataFramework con los datos del archivo csv
+    '''Crea dataFrame con los datos del archivo csv
     PRE: Recive el path de un archivo CSV
     POST: Devuelve un dataframe con la información del archivo
     '''
@@ -116,7 +114,7 @@ def CrearCsvDataFrame(archivo):
     return df
 
 def RetornarInformacionCsv(csvDataFrame, nombreColumna, periodo):
-    '''
+    '''Función que retorna los valores máximos de una columna especificada en un período de tiempo expresado en años
     PRE: Recibe un dataframe, la columna por la cual va a buscar la información y el período expresado en años
     POST: Devuelve el valor máximo
     '''
@@ -135,14 +133,35 @@ def SeleccionarArchivoCsv():
     while (len(csvDireccion) == 0 or (os.getcwd() != os.path.dirname(os.path.abspath(csvDireccion))) ):
         messagebox.showerror("Error", "Debe ingresar un archivo para procesar\nDebe estar en la misma carpeta que el archivo de programa")
         csvDireccion = filedialog.askopenfilename(title="Seleccione el archivo csv a analizar", filetypes=EXTENSIONES_CSV)
-
     return os.path.basename(csvDireccion)
 
+def RetornarLocalizacionActual():
+    '''Usando la libreria geocoder, devuelve la geolocalización basada en IP (lat long).
+    POST: Devuelve la latitud y longitud aproximada de la IP del usuario
+    '''
+    miLocalizacion = geocoder.ip('me')
+    return miLocalizacion.latlng
+
+def RetornarLocalizacion(indiceLocalidad):
+    '''Recibe una localidad, puede ser 'ciudad' o 'provincia'.
+    Devuelve la 'ciudad' o 'provincia' donde se encuentra el usuario, respectivamente.
+    PRE: Recibe la localidad que puede ser "ciudad" o "provincia"
+    POST: Devuelve el nombre de la provincia o ciudad en la que se encuentra el usuario
+    '''
+    try:
+        latLong = RetornarLocalizacionActual()
+        geolocator = Nominatim(user_agent="tp2")
+        location = geolocator.reverse(f"{latLong[0]}, {latLong[1]}")
+        return "".join(location.address.split(',')[indiceLocalidad][1:])
+    except Exception as ex:
+        return ex
+
 def ObtenerSMNjson(url):
-    '''Recibe un link url, y devuelve un archivo Json "crudo".
+    '''Recibe una url, y devuelve un archivo Json "crudo".
+    PRE: Recibe un string en formato url
+    POST: Devuelve un Json 
     '''
     response = requests.get(url, headers=headers)
-
     if response.status_code == 200:
         rawJson = json.loads(response.content.decode('utf-8'))
         return json.dumps(rawJson, sort_keys=True, indent=4, default=rawJson)
@@ -151,19 +170,30 @@ def ObtenerSMNjson(url):
     
 def ObtenerObjetoJSON(url):
     '''Recibe un Json "crudo" y lo devuelve como un objeto Json para que pueda ser abierto e interpretado facilmente.
+    PRE: Recibe una URL de un json
+    POST: Devuelve el json como objeto
     '''
     info = ObtenerSMNjson(url)
-    
     if info is not None:
         objJson=json.loads(info)
     else:
         objJson= None
-    
     return objJson
 
+def ObtenerURL():
+    '''Crea una lista con los jsons de los pronosticos para cada dia, para poder iterar cada dia de pronosticos en la funcion VerPronostico.
+    POST: Devuelve una lista de listas con todos los pronósticos de 1 a 3 días
+    '''
+    listaUrl = []
+    unDia = ObtenerObjetoJSON(PRONOSTICO1D)
+    dosDias = ObtenerObjetoJSON(PRONOSTICO2D)
+    tresDias = ObtenerObjetoJSON(PRONOSTICO3D)
+    listaUrl = [unDia,dosDias,tresDias]
+    return listaUrl
+
 def MostrarAlertasEnVentana(texto):
-    '''Recibe una cadena
-    Abre un cuadro de texto e imprime la cadena dentro de dicho cuadro.
+    '''Recibe una cadena, abre un cuadro de texto en una ventana e imprime la cadena dentro de dicho cuadro.
+    PRE: Recibe un string con el texto
     '''
     if(texto!=""):
         txtBoxWidth, txtBoxHeight = 200, 200
@@ -177,20 +207,11 @@ def MostrarAlertasEnVentana(texto):
     else:
         messagebox.showinfo("Alertas", "No se registraron alertas")
 
-def ObtenerURL():
-    '''Crea una lista con los jsons de los pronosticos para cada dia, para poder iterar cada dia de pronosticos en la funcion VerPronostico.
-    '''
-    lista_url = []
-    un_dia = ObtenerObjetoJSON(PRONOSTICO1D)
-    dos_dias = ObtenerObjetoJSON(PRONOSTICO2D)
-    tres_dias = ObtenerObjetoJSON(PRONOSTICO3D)
-    lista_url = [un_dia,dos_dias,tres_dias]
-    return lista_url
-
 def TodasAlertas(provincia,alertasStr):
     '''Recibe una provincia
     Devuelve en pantalla las alertas que involucran la provincia.
     Si se recibe '0' como provincia, muestra todas las alertas sin filtrar.
+    PRE: Recibe la provincia y una string en caso de tener que mostrar previamente el pronóstico extendido
     '''
     alertas = ObtenerObjetoJSON(ALERTAS_URL)
     contador = 1
@@ -216,55 +237,24 @@ def TodasAlertas(provincia,alertasStr):
 def VerPronostico(ciudad):
     '''Recibe una ciudad ingresada por el usuario.
     En caso de encontrar la ciudad en la base de datos, devuelve en pantalla el pronostico extendido para esa ciudad, y llama a la funcion de verAlertas con la provincia donde se encuentra la ciudad.
+    PRE: Recibe una ciudad ingresada por el usuario
     '''
-    lista_url = ObtenerURL()
+    listaUrl = ObtenerURL()
     provincia = ""
     chequeo = 0
     alertasStr = ""
-    for url in lista_url:
+    for url in listaUrl:
         for p in url:
             if(p["name"] == ciudad):
                 chequeo += 1
                 provincia = p["province"]
-                alertasStr+=f"Día {lista_url.index(url)+1}\nTemperatura a la mañana: {p['weather']['morning_temp']}°C - Clima a la mañana: {p['weather']['morning_desc']}\nTemperatura a la tarde: {p['weather']['afternoon_temp']}°C - Clima a la tarde: {p['weather']['afternoon_desc']}\n"
+                alertasStr+=f"Día {listaUrl.index(url)+1}\nTemperatura a la mañana: {p['weather']['morning_temp']}°C - Clima a la mañana: {p['weather']['morning_desc']}\nTemperatura a la tarde: {p['weather']['afternoon_temp']}°C - Clima a la tarde: {p['weather']['afternoon_desc']}\n"
     if(chequeo == 0):
         alertasStr+="La ciudad ingresada no se encuentra en la base de datos. Intente nuevamente."
         MostrarAlertasEnVentana(alertasStr)
     TodasAlertas(provincia,alertasStr)
         
-def RetornarLocalizacionActual():
-    '''Usando la libreria geocoder, devuelve una geolocalizacion (lat long).
-    '''
-    myLocation = geocoder.ip('me')
-    return myLocation.latlng
 
-def RetornarLocalizacion(localidad):
-    '''Recibe una localidad, puede ser 'ciudad' o 'provincia'.
-    Devuelve la 'ciudad' o 'provincia' donde se encuentra el usuario, respectivamente.
-    '''
-    try:
-        latLong = RetornarLocalizacionActual()
-        geolocator = Nominatim(user_agent="tp2")
-        location = geolocator.reverse(f"{latLong[0]}, {latLong[1]}")
-        if(localidad == 'provincia'):
-            provincia = location.address.split(',')[3]
-            usuario_lista = []
-            for i in provincia:
-                usuario_lista.append(i)
-            usuario_lista.remove(" ")
-            provincia = "".join(usuario_lista)
-            return provincia
-        elif(localidad == 'ciudad'):
-            ciudad = location.address.split(',')[2]
-            usuario_lista = []
-            for i in ciudad:
-                usuario_lista.append(i)
-            usuario_lista.remove(" ")
-            ciudad = "".join(usuario_lista)
-            return ciudad
-    except Exception as ex:
-        return ex
-    
 def MostrarValoresMaximos(df, nombreColumna, tipoDato, periodo):
     '''Muestra la información basado en un dataframe, nombre de columba y período en años
     PRE: Recibe un dataframe, la columna por la cual va a buscar, el tipo de dato y el período expresado en años
@@ -274,9 +264,9 @@ def MostrarValoresMaximos(df, nombreColumna, tipoDato, periodo):
 
 
 def CrearGraficoTemperaturas(df, ultimosAnios):
-    '''
-    Muestra grafico con el promedio de temperaturas maximas y minimas anuales durante
+    '''Muestra grafico con el promedio de temperaturas maximas y minimas anuales durante
     el periodo de tiempo especificado por (periodo)
+    PRE: Recibe un dataframe y la cantidad de años
     '''
     try:
         listaAnio=[]
@@ -332,14 +322,16 @@ def MostrarAlertasRadar():
     while len(imagePath) == 0:
         messagebox.showerror("Error", "Debe ingresar un archivo para procesar.")
         imagePath = filedialog.askopenfilename(title="Seleccione la imagen a analizar", filetypes=EXTENSIONES_IMG)
-    messagebox.showinfo("Alertas",TraerAlertasDeImagen(RecortarImagen(imagePath)))
+    messagebox.showinfo("Alertas",TraerAlertasDeImagen(RecortarImagen(imagePath,[15, 555], [21, 755])))
 
 def MenuTormenta():
+    '''Crea el menu principal de la aplicación utilizando la librería tkinter
+    '''
     ventanaTormenta = tk.Tk()
     ventanaTormenta.geometry("300x340")
     ventanaTormenta.title("Tormenta")
     tk.Label(ventanaTormenta, text="Bienvenidos a Tormenta").pack()
-    btn_OpcionUno = tk.Button(ventanaTormenta, text = "Listar alertas por localización", command = lambda:TodasAlertas(RetornarLocalizacion('provincia'),""))
+    btn_OpcionUno = tk.Button(ventanaTormenta, text = "Listar alertas por localización", command = lambda:TodasAlertas(RetornarLocalizacion(3),""))
     btn_OpcionUno.pack(pady = 10)    
     btn_OpcionDos = tk.Button(ventanaTormenta, text = "Listar todas las alertas", command = lambda:TodasAlertas('0',""))
     btn_OpcionDos.pack(pady = 10)
@@ -349,10 +341,12 @@ def MenuTormenta():
     btn_OpcionCuatro.pack(pady = 10)
     btn_OptionFive = tk.Button(ventanaTormenta, text = "Analizar imagen", command=MostrarAlertasRadar)
     btn_OptionFive.pack(pady = 10)
-    tk.Label(ventanaTormenta, text = RetornarLocalizacion('ciudad')).pack()
+    tk.Label(ventanaTormenta, text = RetornarLocalizacion(2)).pack()
     tk.mainloop()
 
 def CrearVentanaEstadisticas():
+    '''Crea la ventana para mostrar los gráficos y estadísticas usando la librería tkinter
+    '''
     ventanaEstadisticas = tk.Tk()
     ventanaEstadisticas.geometry("300x400")
     ventanaEstadisticas.title("Seleccione una opción")
@@ -377,6 +371,8 @@ def CrearVentanaEstadisticas():
     tk.mainloop()
 
 def CrearVentanaCiudad():
+    '''Crea la ventana para que el usuario pueda ingresar la ciudad y ver el pronóstico usando la librería tkinter
+    '''
     ventanaCiudad = tk.Tk()
     ventanaCiudad.geometry("300x300")
     etiquetaCiudad = tk.Label(ventanaCiudad, text = "Ingrese ciudad")
