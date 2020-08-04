@@ -142,8 +142,11 @@ def RetornarLocalizacionActual():
     '''Usando la libreria geocoder, devuelve la geolocalización basada en IP (lat long).
     POST: Devuelve la latitud y longitud aproximada de la IP del usuario
     '''
-    miLocalizacion = geocoder.ip('me')
-    return miLocalizacion.latlng
+    try:
+        miLocalizacion = geocoder.ip('me')
+        return miLocalizacion.latlng
+    except Exception as ex:
+        return ex
 
 def RetornarLocalizacion(indiceLocalidad):
     '''Recibe un índice de ubicación, el cual es 3 para la provincia y 2 para la ciudad.
@@ -156,33 +159,38 @@ def RetornarLocalizacion(indiceLocalidad):
     4: Comuna o barrio/zona
     5: Código postal aproximado
     6: País
-    PRE: Recibe la localidad que puede ser "ciudad" o "provincia"
+    PRE: Recibe el indice de localidad
     POST: Devuelve el nombre de la provincia o ciudad (o barrio) en la que se encuentra el usuario
     '''
     try:
         latLong = RetornarLocalizacionActual()
-        geolocator = Nominatim(user_agent="tp2")
-        location = geolocator.reverse(f"{latLong[0]}, {latLong[1]}")
-        return "".join(location.address.split(',')[indiceLocalidad][1:])
+        if(not isinstance(latLong, Exception)):
+            geolocator = Nominatim(user_agent="tp2")
+            location = geolocator.reverse(f"{latLong[0]}, {latLong[1]}")
+            return "".join(location.address.split(',')[indiceLocalidad][1:])
+        else:
+            return "Error al traer la ubicación actual"
     except Exception as ex:
         return ex
 
 
 def ObtenerSMNjson(url):
     '''Recibe un link url, y devuelve un archivo Json "crudo" en formato JSON String.
+    PRE: Recibe una url de un archivo json
+    POST: Devuelve el respectivo json
     '''
     try:
         response = requests.get(url, headers=headers)
         rawJson = json.loads(response.content.decode('utf-8'))
-
         return json.dumps(rawJson, sort_keys=True, indent=4, default=rawJson)
-    
-    except requests.exceptions.RequestException as error: 
-        return SystemExit(error)
+    except requests.exceptions.RequestException as ex: 
+        return SystemExit(ex)
 
 
 def ObtenerObjetoJSON(url):
     '''Recibe un Json string y lo devuelve como un objeto Json para que pueda ser abierto e interpretado facilmente.
+    PRE: Recibe una url de un json
+    POST: Devuelve el json como objeto
     '''
     try:
         info = ObtenerSMNjson(url)
@@ -190,7 +198,6 @@ def ObtenerObjetoJSON(url):
             objJson=json.loads(info)
         else:
             objJson={}        
-        
         return objJson
     except Exception as ex:
         return ex
@@ -254,20 +261,24 @@ def VerPronostico(ciudad):
     En caso de encontrar la ciudad en la base de datos, devuelve en pantalla el pronostico extendido para esa ciudad, y llama a la funcion de verAlertas con la provincia donde se encuentra la ciudad.
     PRE: Recibe una ciudad ingresada por el usuario
     '''
-    listaUrl = ObtenerURL()
-    provincia = ""
-    chequeo = 0
-    alertasStr = ""
-    for url in listaUrl:
-        for p in url:
-            if(p["name"] == ciudad):
-                chequeo += 1
-                provincia = p["province"]
-                alertasStr+=f"Día {listaUrl.index(url)+1}\nTemperatura a la mañana: {p['weather']['morning_temp']}°C - Clima a la mañana: {p['weather']['morning_desc']}\nTemperatura a la tarde: {p['weather']['afternoon_temp']}°C - Clima a la tarde: {p['weather']['afternoon_desc']}\n"
-    if(chequeo == 0):
-        alertasStr+="La ciudad ingresada no se encuentra en la base de datos. Intente nuevamente."
-        MostrarAlertasEnVentana(alertasStr)
-    TodasAlertas(provincia,alertasStr)
+    try:
+        listaUrl = ObtenerURL()
+        provincia = ""
+        chequeo = 0
+        alertasStr = ""
+        for url in listaUrl:
+            for p in url:
+                if(p["name"] == ciudad):
+                    chequeo += 1
+                    provincia = p["province"]
+                    alertasStr+=f"Día {listaUrl.index(url)+1}\nTemperatura a la mañana: {p['weather']['morning_temp']}°C - Clima a la mañana: {p['weather']['morning_desc']}\nTemperatura a la tarde: {p['weather']['afternoon_temp']}°C - Clima a la tarde: {p['weather']['afternoon_desc']}\n"
+        if(chequeo == 0):
+            alertasStr+="La ciudad ingresada no se encuentra en la base de datos. Intente nuevamente."
+            MostrarAlertasEnVentana(alertasStr)
+        TodasAlertas(provincia,alertasStr)
+    except Exception as ex:
+        messagebox.showerror("Error", ex)
+
         
 
 def MostrarValoresMaximos(df, nombreColumna, tipoDato, periodo):
@@ -289,38 +300,27 @@ def CrearGrafico(df, ultimosAnios, tema):
         ultimosAnios=int(ultimosAnios)
         df['Date'] = pd.to_datetime(df['Date']).dt.date
         fechaHoy=(pd.to_datetime('today')).date()
-
-        if (tema=="temperatura"):
-            listaTempMax=[]
-            listaTempMin=[]
-            
-            for i in range(ultimosAnios, -1, -1):
-                
-                fechaInicio=fechaHoy.replace(year=fechaHoy.year-i, month=1, day =1)
-                fechaFin=fechaHoy.replace(year=fechaHoy.year-i, month=12, day=31)
-                listaAnio.append(fechaInicio.year)
+        listaTempMax = []
+        listaTempMin = []
+        listaHumedad = []
+        for i in range(ultimosAnios, -1, -1):
+            fechaInicio=fechaHoy.replace(year=fechaHoy.year-i, month=1, day =1)
+            fechaFin=fechaHoy.replace(year=fechaHoy.year-i, month=12, day=31)
+            listaAnio.append(fechaInicio.year)
+            if(tema=="temperatura"):
                 listaTempMax.append(df.loc[((df['Date']<=fechaFin) & (df['Date']>=fechaInicio)), 'Max Temperature'].mean())
                 listaTempMin.append(df.loc[((df['Date']<=fechaFin) & (df['Date']>=fechaInicio)), 'Min Temperature'].mean())
-            dfPromedioTemp=pd.DataFrame({'Temperatura Maxima':listaTempMax, 'Temperatura Minima':listaTempMin}, index=listaAnio)
-            graficoTemperatura=dfPromedioTemp.plot.bar(title='Promedio de temperaturas anuales')
-            graficoTemperatura.set_xlabel("Año")
-            graficoTemperatura.set_ylabel("Promedio")
-            plt.show()
-
-        if (tema=="humedad"):
-            listaHumedad=[]
-            for i in range(ultimosAnios, -1, -1):
-            
-                fechaInicio=fechaHoy.replace(year=fechaHoy.year-i, month=1, day =1)
-                fechaFin=fechaHoy.replace(year=fechaHoy.year-i, month=12, day=31)
-                listaAnio.append(fechaInicio.year)
+            elif(tema=="humedad"):
                 listaHumedad.append(df.loc[((df['Date']<=fechaFin) & (df['Date']>=fechaInicio)), 'Relative Humidity'].mean())
+        if(tema=="temperatura"):
+            dfPromedioTemp=pd.DataFrame({'Temperatura Maxima':listaTempMax, 'Temperatura Minima':listaTempMin}, index=listaAnio)
+            grafico=dfPromedioTemp.plot.bar(title='Promedio de temperaturas anuales')
+        elif(tema=="humedad"):
             dfPromedioHum=pd.DataFrame({'Promedio humedad':listaHumedad}, index=listaAnio)
-            graficoHum=dfPromedioHum.plot.bar(title='Promedio de humedad')
-            graficoHum.set_xlabel("Año")
-            graficoHum.set_ylabel("Promedio")
-            plt.show()
-
+            grafico=dfPromedioHum.plot.bar(title='Promedio de humedad')
+        grafico.set_xlabel("Año")
+        grafico.set_ylabel("Promedio")
+        plt.show()
     except Exception as ex:
         messagebox.showerror("Error", ex)
 
