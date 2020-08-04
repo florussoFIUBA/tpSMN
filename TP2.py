@@ -106,12 +106,15 @@ def TraerAlertasDeImagen(imagen):
         return ex
 
 def CrearCsvDataFrame(archivo):
-    '''Crea dataFrame con los datos del archivo csv
+    '''Crea dataFramework con los datos del archivo csv
     PRE: Recive el path de un archivo CSV
     POST: Devuelve un dataframe con la información del archivo
     '''
-    df = pd.read_csv(archivo, index_col=False)
-    return df
+    try:
+        df = pd.read_csv(archivo, index_col=False)
+        return df
+    except Exception as ex:
+        return ex
 
 def RetornarInformacionCsv(csvDataFrame, nombreColumna, periodo):
     '''Función que retorna los valores máximos de una columna especificada en un período de tiempo expresado en años
@@ -164,29 +167,33 @@ def RetornarLocalizacion(indiceLocalidad):
     except Exception as ex:
         return ex
 
+
 def ObtenerSMNjson(url):
-    '''Recibe una url, y devuelve un archivo Json "crudo".
-    PRE: Recibe un string en formato url
-    POST: Devuelve un Json 
+    '''Recibe un link url, y devuelve un archivo Json "crudo" en formato JSON String.
     '''
-    response = requests.get(url, headers=headers)
-    if response.status_code == 200:
+    try:
+        response = requests.get(url, headers=headers)
         rawJson = json.loads(response.content.decode('utf-8'))
+
         return json.dumps(rawJson, sort_keys=True, indent=4, default=rawJson)
-    else:
-        return None
     
+    except requests.exceptions.RequestException as error: 
+        return SystemExit(error)
+
+
 def ObtenerObjetoJSON(url):
-    '''Recibe un Json "crudo" y lo devuelve como un objeto Json para que pueda ser abierto e interpretado facilmente.
-    PRE: Recibe una URL de un json
-    POST: Devuelve el json como objeto
+    '''Recibe un Json string y lo devuelve como un objeto Json para que pueda ser abierto e interpretado facilmente.
     '''
-    info = ObtenerSMNjson(url)
-    if info is not None:
-        objJson=json.loads(info)
-    else:
-        objJson= None
-    return objJson
+    try:
+        info = ObtenerSMNjson(url)
+        if(not isinstance(info, Exception)):
+            objJson=json.loads(info)
+        else:
+            objJson={}        
+        
+        return objJson
+    except Exception as ex:
+        return ex
 
 def ObtenerURL():
     '''Crea una lista con los jsons de los pronosticos para cada dia, para poder iterar cada dia de pronosticos en la funcion VerPronostico.
@@ -271,57 +278,52 @@ def MostrarValoresMaximos(df, nombreColumna, tipoDato, periodo):
     messagebox.showinfo(message=f"{tipoDato}: {RetornarInformacionCsv(df, nombreColumna, periodo)}")
 
 
-def CrearGraficoTemperaturas(df, ultimosAnios):
-    '''Muestra grafico con el promedio de temperaturas maximas y minimas anuales durante
-    el periodo de tiempo especificado por (periodo)
-    PRE: Recibe un dataframe y la cantidad de años
+def CrearGrafico(df, ultimosAnios, tema):
+    '''
+    Muestra grafico con el promedio de temperaturas maximas y minimas anuales o humedad durante el periodo de tiempo especificado por (periodo).
+    PRE: Recibe un dataframe, un entero con el periodo en añis y el tema del grafico (humedad o temperatura).
+    POST: Grafico con los valores correspondientes del dataframe.
     '''
     try:
         listaAnio=[]
-        listaTempMax=[]
-        listaTempMin=[]
         ultimosAnios=int(ultimosAnios)
         df['Date'] = pd.to_datetime(df['Date']).dt.date
         fechaHoy=(pd.to_datetime('today')).date()
-        for i in range(ultimosAnios, -1, -1):
+
+        if (tema=="temperatura"):
+            listaTempMax=[]
+            listaTempMin=[]
             
-            fechaInicio=fechaHoy.replace(year=fechaHoy.year-i, month=1, day =1)
-            fechaFin=fechaHoy.replace(year=fechaHoy.year-i, month=12, day=31)
-            listaAnio.append(fechaInicio.year)
-            listaTempMax.append(df.loc[((df['Date']<=fechaFin) & (df['Date']>=fechaInicio)), 'Max Temperature'].mean())
-            listaTempMin.append(df.loc[((df['Date']<=fechaFin) & (df['Date']>=fechaInicio)), 'Min Temperature'].mean())
-        dfPromedioTemp=pd.DataFrame({'Temperatura Maxima':listaTempMax, 'Temperatura Minima':listaTempMin}, index=listaAnio)
-        graficoTemperatura=dfPromedioTemp.plot.bar(title='Promedio de temperaturas anuales')
-        graficoTemperatura.set_xlabel("Año")
-        graficoTemperatura.set_ylabel("Promedio")
-        plt.show()
+            for i in range(ultimosAnios, -1, -1):
+                
+                fechaInicio=fechaHoy.replace(year=fechaHoy.year-i, month=1, day =1)
+                fechaFin=fechaHoy.replace(year=fechaHoy.year-i, month=12, day=31)
+                listaAnio.append(fechaInicio.year)
+                listaTempMax.append(df.loc[((df['Date']<=fechaFin) & (df['Date']>=fechaInicio)), 'Max Temperature'].mean())
+                listaTempMin.append(df.loc[((df['Date']<=fechaFin) & (df['Date']>=fechaInicio)), 'Min Temperature'].mean())
+            dfPromedioTemp=pd.DataFrame({'Temperatura Maxima':listaTempMax, 'Temperatura Minima':listaTempMin}, index=listaAnio)
+            graficoTemperatura=dfPromedioTemp.plot.bar(title='Promedio de temperaturas anuales')
+            graficoTemperatura.set_xlabel("Año")
+            graficoTemperatura.set_ylabel("Promedio")
+            plt.show()
+
+        if (tema=="humedad"):
+            listaHumedad=[]
+            for i in range(ultimosAnios, -1, -1):
+            
+                fechaInicio=fechaHoy.replace(year=fechaHoy.year-i, month=1, day =1)
+                fechaFin=fechaHoy.replace(year=fechaHoy.year-i, month=12, day=31)
+                listaAnio.append(fechaInicio.year)
+                listaHumedad.append(df.loc[((df['Date']<=fechaFin) & (df['Date']>=fechaInicio)), 'Relative Humidity'].mean())
+            dfPromedioHum=pd.DataFrame({'Promedio humedad':listaHumedad}, index=listaAnio)
+            graficoHum=dfPromedioHum.plot.bar(title='Promedio de humedad')
+            graficoHum.set_xlabel("Año")
+            graficoHum.set_ylabel("Promedio")
+            plt.show()
+
     except Exception as ex:
         messagebox.showerror("Error", ex)
 
-
-def CrearGraficoHumedad(df, ultimosAnios):
-    '''Muestra gráfico de humedad de los últimos años
-    PRE: Recibe un dataframe con la información y la cantidad de años a buscar
-    '''
-    try:
-        listaAnio=[]
-        listaHumedad=[]
-        ultimosAnios=int(ultimosAnios)
-        df['Date'] = pd.to_datetime(df['Date']).dt.date
-        fechaHoy=(pd.to_datetime('today')).date()
-        for i in range(ultimosAnios, -1, -1):
-            
-            fechaInicio=fechaHoy.replace(year=fechaHoy.year-i, month=1, day =1)
-            fechaFin=fechaHoy.replace(year=fechaHoy.year-i, month=12, day=31)
-            listaAnio.append(fechaInicio.year)
-            listaHumedad.append(df.loc[((df['Date']<=fechaFin) & (df['Date']>=fechaInicio)), 'Relative Humidity'].mean())
-        dfPromedioHum=pd.DataFrame({'Promedio humedad':listaHumedad}, index=listaAnio)
-        graficoHum=dfPromedioHum.plot.bar(title='Promedio de humedad')
-        graficoHum.set_xlabel("Año")
-        graficoHum.set_ylabel("Promedio")
-        plt.show()
-    except Exception as ex:
-        messagebox.showerror("Error", ex)
 
 def MostrarAlertasRadar():
     '''Pide al usuario seleccionar un archivo de imagen, luego ejecuta el proceso y muestra las alertas para la imagen de radar ingresada
@@ -368,9 +370,9 @@ def CrearVentanaEstadisticas():
     etiquetaPeriodo.pack(pady = 10)
     entradaPeriodo = tk.Entry(ventanaEstadisticas)
     entradaPeriodo.pack()
-    btn_OpcionUno = tk.Button(ventanaEstadisticas, text = "Promedio de temperaturas anuales", command = lambda:CrearGraficoTemperaturas(CrearCsvDataFrame(entradaArchivo.get()), entradaPeriodo.get()))
+    btn_OpcionUno = tk.Button(ventanaEstadisticas, text = "Promedio de temperaturas anuales", command = lambda:CrearGrafico(CrearCsvDataFrame(entradaArchivo.get()), entradaPeriodo.get(), 'temperatura'))
     btn_OpcionUno.pack(pady = 10)  
-    btn_OpcionDos = tk.Button(ventanaEstadisticas, text = "Promedio de humedad", command = lambda:CrearGraficoHumedad(CrearCsvDataFrame(entradaArchivo.get()), entradaPeriodo.get()))
+    btn_OpcionDos = tk.Button(ventanaEstadisticas, text = "Promedio de humedad", command = lambda:CrearGrafico(CrearCsvDataFrame(entradaArchivo.get()), entradaPeriodo.get(), 'humedad'))
     btn_OpcionDos.pack(pady = 10)  
     btn_OpcionTres = tk.Button(ventanaEstadisticas, text = "Milímetros máximos de lluvia", command= lambda : MostrarValoresMaximos(CrearCsvDataFrame(entradaArchivo.get()), 'Precipitation', 'Milímetros máximos de lluvia', entradaPeriodo.get()))
     btn_OpcionTres.pack(pady = 10)  
