@@ -23,6 +23,9 @@ ALERTAS_URL = "https://ws.smn.gob.ar/alerts/type/AL"
 EXTENSIONES_IMG = (
     ("PNG files", "*.png"),
 )
+EXTENSIONES_CSV = (
+    ("CSV files", "*.csv"),
+)
 UBICACIONES_POR_DEFECTO = [
     ["SANTA FE - PARANA", 426, 565, 42, 180],
     ["CORDOBA", 319, 422, 54, 187],
@@ -36,9 +39,6 @@ UBICACIONES_POR_DEFECTO = [
     ["BAHIA BLANCA", 388, 446, 381, 438],
     ["VIEDMA", 362, 455, 451, 502]
 ]
-EXTENSIONES_CSV = (
-    ("CSV files", "*.csv"),
-)
 headers = {'Content-Type':'application/json',
             'Authorization':''}
 
@@ -128,16 +128,6 @@ def RetornarInformacionCsv(csvDataFrame, nombreColumna, periodo):
     except Exception as ex:
        return ex
 
-def SeleccionarArchivoCsv():
-    '''Abre un open file dialog para que el usuario seleccione un archivo csv
-    POST: Retorna el path del archivo csv
-    '''
-    csvDireccion = filedialog.askopenfilename(title="Seleccione el archivo csv", filetypes=EXTENSIONES_CSV)
-    while (len(csvDireccion) == 0 or (os.getcwd() != os.path.dirname(os.path.abspath(csvDireccion))) ):
-        messagebox.showerror("Error", "Debe ingresar un archivo para procesar\nDebe estar en la misma carpeta que el archivo de programa")
-        csvDireccion = filedialog.askopenfilename(title="Seleccione el archivo csv a analizar", filetypes=EXTENSIONES_CSV)
-    return os.path.basename(csvDireccion)
-
 def RetornarLocalizacionActual():
     '''Usando la libreria geocoder, devuelve la geolocalización basada en IP (lat long).
     POST: Devuelve la latitud y longitud aproximada de la IP del usuario
@@ -213,51 +203,52 @@ def ObtenerURL():
     listaUrl = [unDia,dosDias,tresDias]
     return listaUrl
 
-def MostrarAlertasEnVentana(texto):
+def MostrarInfoEnVentana(texto):
     '''Recibe una cadena, abre un cuadro de texto en una ventana e imprime la cadena dentro de dicho cuadro.
     PRE: Recibe un string con el texto
     '''
     if(texto!=""):
-        txtBoxWidth, txtBoxHeight = 200, 200
+        txtBoxWidth, txtBoxHeight = 500, 200
         ventanaAlertas = tk.Tk()
-        ventanaAlertas.geometry("250x250")
-        ventanaAlertas.title("Alertas")
+        ventanaAlertas.geometry("550x200")
+        ventanaAlertas.title("Info")
         txtBoxScroll = tkscrolled.ScrolledText(master = ventanaAlertas, width = txtBoxWidth, height = txtBoxHeight, wrap='word')
         txtBoxScroll.insert(index = 1.0, chars = texto)
         txtBoxScroll.pack()
         ventanaAlertas.mainloop()
     else:
-        messagebox.showinfo("Alertas", "No se registraron alertas")
+        messagebox.showinfo("Info", "No se registraron alertas")
 
-def TodasAlertas(provincia,alertasStr):
+def TodasAlertas(ubicacion,alertasStr, mostrarTodasAlertas):
     '''Recibe una provincia
     Devuelve en pantalla las alertas que involucran la provincia.
     Si se recibe '0' como provincia, muestra todas las alertas sin filtrar.
-    PRE: Recibe la provincia y una string en caso de tener que mostrar previamente el pronóstico extendido
+    PRE: Recibe la provincia, una string en caso de tener que mostrar previamente el pronóstico extendido y un bool que indica si debe mostrar todas las alertas
     '''
     alertas = ObtenerObjetoJSON(ALERTAS_URL)
     contador = 1
-    if(provincia == '0'):
+    if(mostrarTodasAlertas):
         for p in alertas:
             alertasStr+=f"Alerta n°{contador}\nTitulo: {p['title']}\nEstado: {p['status']}\Fecha: {p['date']}\nHora: {p['hour']}\nDescripcion: {p['description']}\nZonas: \n"
             for i in (p["zones"]).values():
                 alertasStr += f"{i}\n"
             alertasStr+="\n\n"
             contador += 1
-        MostrarAlertasEnVentana(alertasStr)
     else:
+        if(ubicacion==""):
+            ubicacion = RetornarLocalizacion(3)
         for q in alertas:
             for i in (q["zones"]).values():
-                encontrado = provincia in i
+                encontrado = ubicacion in i
                 if(encontrado is True):
                     alertasStr+=f"Alerta n°{contador}:\nTitulo: {q['title']}\nEstado: {q['status']}\nFecha: {q['date']}\nHora: {q['hour']}\nDescripcion: {q['description']}\Zona: {i}\nLas alertas involucran su provincia, pero pueden no involucrar su ciudad."
                     contador += 1
         if(contador == 1):
             alertasStr+="No se han encontrado alertas para su provincia.\n"
-        MostrarAlertasEnVentana(alertasStr)
+    MostrarInfoEnVentana(alertasStr)
 
-def VerPronostico(ciudad,tipo):
-    '''Recibe una ciudad ingresada por el usuario.
+def VerPronosticoAlertas(ubicacion):
+    '''Recibe una ubicación ingresada por el usuario.
     En caso de encontrar la ciudad en la base de datos, devuelve en pantalla el pronostico extendido para esa ciudad, y llama a la funcion de verAlertas con la provincia donde se encuentra la ciudad.
     PRE: Recibe una ciudad ingresada por el usuario
     '''
@@ -265,21 +256,19 @@ def VerPronostico(ciudad,tipo):
         listaUrl = ObtenerURL()
         provincia = ""
         chequeo = 0
-        alertasStr = ""
+        pronosticoAlertas = ""
+        if(ubicacion==""):
+            ubicacion = RetornarLocalizacion(3)
         for url in listaUrl:
             for p in url:
-                if(p["name"] == ciudad):
+                if(p["province"] == ubicacion or p["name"]==ubicacion):
                     chequeo += 1
-                    if(tipo == "alertas"):
-                        provincia = p["province"]
-                        TodasAlertas(provincia,alertasStr)
-                    elif(tipo == "pronostico"):
-                        provincia = p["province"]
-                        alertasStr+=f"Día {listaUrl.index(url)+1}\nTemperatura a la mañana: {p['weather']['morning_temp']}°C - Clima a la mañana: {p['weather']['morning_desc']}\nTemperatura a la tarde: {p['weather']['afternoon_temp']}°C - Clima a la tarde: {p['weather']['afternoon_desc']}\n"
+                    provincia = p["province"]
+                    pronosticoAlertas+=f"Día {listaUrl.index(url)+1}\nTemperatura a la mañana: {p['weather']['morning_temp']}°C - Clima a la mañana: {p['weather']['morning_desc']}\nTemperatura a la tarde: {p['weather']['afternoon_temp']}°C - Clima a la tarde: {p['weather']['afternoon_desc']}\nZona: {p['name']}\n"
         if(chequeo == 0):
-            alertasStr+="La ciudad ingresada no se encuentra en la base de datos. Intente nuevamente."
-            MostrarAlertasEnVentana(alertasStr)
-        TodasAlertas(provincia,alertasStr)
+            pronosticoAlertas+="La ciudad ingresada no se encuentra en la base de datos o no hay pronósticos. Intente nuevamente."
+            MostrarInfoEnVentana(pronosticoAlertas)
+        TodasAlertas(provincia,pronosticoAlertas, False)
     except Exception as ex:
         messagebox.showerror("Error", ex)
 
@@ -287,7 +276,7 @@ def MostrarValoresMaximos(df, nombreColumna, tipoDato, periodo):
     '''Muestra la información basado en un dataframe, nombre de columba y período en años
     PRE: Recibe un dataframe, la columna por la cual va a buscar, el tipo de dato y el período expresado en años
     '''
-    periodo = str(periodo)+"Y"
+    periodo = f"{str(periodo)}Y"
     messagebox.showinfo(message=f"{tipoDato}: {RetornarInformacionCsv(df, nombreColumna, periodo)}")
 
 
@@ -326,15 +315,24 @@ def CrearGrafico(df, ultimosAnios, tema):
     except Exception as ex:
         messagebox.showerror("Error", ex)
 
+def SeleccionarArchivoCsv():
+    '''Abre un open file dialog para que el usuario seleccione un archivo csv
+    POST: Retorna el path del archivo csv
+    '''
+    csvDireccion = filedialog.askopenfilename(title="Seleccione el archivo csv", filetypes=EXTENSIONES_CSV)
+    if (len(csvDireccion) == 0 or (os.getcwd() != os.path.dirname(os.path.abspath(csvDireccion))) ):
+        messagebox.showerror("Error", "Debe ingresar un archivo para procesar\nDebe estar en la misma carpeta que el archivo de programa")
+        return ""
+    return os.path.basename(csvDireccion)
 
 def MostrarAlertasRadar():
     '''Pide al usuario seleccionar un archivo de imagen, luego ejecuta el proceso y muestra las alertas para la imagen de radar ingresada
     '''
     imagePath = filedialog.askopenfilename(title="Seleccione la imagen a analizar", filetypes=EXTENSIONES_IMG)
-    while len(imagePath) == 0:
+    if (len(imagePath) == 0):
         messagebox.showerror("Error", "Debe ingresar un archivo para procesar.")
-        imagePath = filedialog.askopenfilename(title="Seleccione la imagen a analizar", filetypes=EXTENSIONES_IMG)
-    messagebox.showinfo("Alertas",TraerAlertasDeImagen(RecortarImagen(imagePath,[15, 555], [21, 755])))
+    else:
+        messagebox.showinfo("Alertas",TraerAlertasDeImagen(RecortarImagen(imagePath,[15, 555], [21, 755])))
 
 def MenuTormenta():
     '''Crea el menu principal de la aplicación utilizando la librería tkinter
@@ -343,13 +341,13 @@ def MenuTormenta():
     ventanaTormenta.geometry("300x340")
     ventanaTormenta.title("Tormenta")
     tk.Label(ventanaTormenta, text="Bienvenidos a Tormenta").pack()
-    btn_OpcionUno = tk.Button(ventanaTormenta, text = "Listar alertas por localización", command = lambda:TodasAlertas(RetornarLocalizacion(3),""))
+    btn_OpcionUno = tk.Button(ventanaTormenta, text = "Listar alertas por localización", command = lambda: CrearVentanaCiudad(True))
     btn_OpcionUno.pack(pady = 10)    
-    btn_OpcionDos = tk.Button(ventanaTormenta, text = "Listar todas las alertas", command = lambda:TodasAlertas('0',""))
+    btn_OpcionDos = tk.Button(ventanaTormenta, text = "Listar todas las alertas", command = lambda:TodasAlertas('0',"", True))
     btn_OpcionDos.pack(pady = 10)
     btn_OpcionTres = tk.Button(ventanaTormenta, text = "Mostrar gráficos", command = CrearVentanaEstadisticas)
     btn_OpcionTres.pack(pady = 10)
-    btn_OpcionCuatro = tk.Button(ventanaTormenta, text = "Pronóstico extendido y alertas", command = CrearVentanaCiudad)
+    btn_OpcionCuatro = tk.Button(ventanaTormenta, text = "Pronóstico extendido y alertas", command = lambda: CrearVentanaCiudad(False))
     btn_OpcionCuatro.pack(pady = 10)
     btn_OptionFive = tk.Button(ventanaTormenta, text = "Analizar imagen", command=MostrarAlertasRadar)
     btn_OptionFive.pack(pady = 10)
@@ -382,16 +380,21 @@ def CrearVentanaEstadisticas():
     btn_OpcionCuatro.pack(pady = 10)
     tk.mainloop()
 
-def CrearVentanaCiudad():
-    '''Crea la ventana para que el usuario pueda ingresar la ciudad y ver el pronóstico usando la librería tkinter
+def CrearVentanaCiudad(soloAlertas):
+    '''Crea la ventana para que el usuario pueda ingresar la ciudad y ver el pronóstico y/o las alertas usando la librería tkinter
+    PRE: Recibe un bool el cual indica si son solo alertas o es alertas y pronóstico
     '''
     ventanaCiudad = tk.Tk()
-    ventanaCiudad.geometry("300x300")
-    etiquetaCiudad = tk.Label(ventanaCiudad, text = "Ingrese ciudad")
+    ventanaCiudad.geometry("300x150")
+    ventanaCiudad.title("Seleccione ubicación")
+    etiquetaCiudad = tk.Label(ventanaCiudad, text = "Ingrese ubicación\n(Deje en blanco para tomar ubicación actual)")
     etiquetaCiudad.pack(pady = 10)
     entradaCiudad = tk.Entry(ventanaCiudad)
     entradaCiudad.pack(pady = 10)
-    btnBuscar = tk.Button(ventanaCiudad, text = "Buscar", command = lambda:VerPronostico(entradaCiudad.get(),"pronostico"))
+    if(soloAlertas):
+        btnBuscar = tk.Button(ventanaCiudad, text = "Buscar", command = lambda:TodasAlertas(entradaCiudad.get(), "", False))
+    else:
+        btnBuscar = tk.Button(ventanaCiudad, text = "Buscar", command = lambda:VerPronosticoAlertas(entradaCiudad.get()))
     btnBuscar.pack()
     tk.mainloop()
 
