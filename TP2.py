@@ -279,8 +279,6 @@ def VerPronostico(ciudad):
     except Exception as ex:
         messagebox.showerror("Error", ex)
 
-        
-
 def MostrarValoresMaximos(df, nombreColumna, tipoDato, periodo):
     '''Muestra la información basado en un dataframe, nombre de columba y período en años
     PRE: Recibe un dataframe, la columna por la cual va a buscar, el tipo de dato y el período expresado en años
