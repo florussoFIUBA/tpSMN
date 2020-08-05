@@ -43,6 +43,10 @@ headers = {'Content-Type':'application/json',
             'Authorization':''}
 
 def ReemplazarAcentos(texto):
+    '''Reemplaza los acentos de un texto dado
+    PRE: Recibe un string
+    POST: Devuelve el string reemplazando los acentos correspondientes al Castellano
+    '''
     return texto.replace("á", "a").replace("é", "e").replace("í", "i").replace("ó", "o").replace("ú", "u")
 
 def RecortarImagen(rutaImagen, pixInicial, pixFinal):
@@ -222,7 +226,7 @@ def MostrarInfoEnVentana(texto):
     else:
         messagebox.showinfo("Info", "No se registraron alertas")
 
-def TodasAlertas(ubicacion,alertasStr, mostrarTodasAlertas):
+def MostrarAlertas(ubicacion, alertasStr, mostrarTodasAlertas):
     '''Recibe una provincia
     Devuelve en pantalla las alertas que involucran la provincia.
     PRE: Recibe la provincia, una string en caso de tener que mostrar previamente el pronóstico extendido y un bool que indica si debe mostrar todas las alertas
@@ -243,13 +247,15 @@ def TodasAlertas(ubicacion,alertasStr, mostrarTodasAlertas):
             for i in (q["zones"]).values():
                 encontrado = ubicacion in i
                 if(encontrado is True):
-                    alertasStr+=f"Alerta n°{contador}:\nTitulo: {q['title']}\nEstado: {q['status']}\nFecha: {q['date']}\nHora: {q['hour']}\nDescripcion: {q['description']}\Zona: {i}\nLas alertas involucran su provincia, pero pueden no involucrar su ciudad."
+                    alertasStr+=f"Alerta n°{contador}:\nTitulo: {q['title']}\nEstado: {q['status']}\nFecha: {q['date']}\nHora: {q['hour']}\nDescripcion: {q['description']}\nZona: {i}\n"
                     contador += 1
-        if(contador == 1):
+        if(contador >1):
+            alertasStr+="Las alertas involucran su provincia, pero pueden no involucrar su ciudad.\n"
+        elif(contador == 1):
             alertasStr+="No se han encontrado alertas para su provincia.\n"
     MostrarInfoEnVentana(alertasStr)
 
-def VerPronosticoAlertas(ubicacion):
+def VerPronosticoAlertas(ubicacion, seleccion):
     '''Recibe una ubicación ingresada por el usuario.
     En caso de encontrar la ciudad en la base de datos, devuelve en pantalla el pronostico extendido para esa ciudad, y llama a la funcion de verAlertas con la provincia donde se encuentra la ciudad.
     PRE: Recibe una ciudad ingresada por el usuario
@@ -261,18 +267,20 @@ def VerPronosticoAlertas(ubicacion):
         pronosticoAlertas = ""
         if(ubicacion==""):
             ubicacion = RetornarLocalizacion(3)
+        ubicacion = ReemplazarAcentos(ubicacion.lower())
         for url in listaUrl:
             for p in url:
-                if(p["province"] == ubicacion or p["name"]==ubicacion):
+                if(ReemplazarAcentos(p["province"].lower()) == ubicacion or ReemplazarAcentos(p["name"].lower())==ubicacion):
                     chequeo += 1
                     provincia = p["province"]
-                    pronosticoAlertas+=f"Día {listaUrl.index(url)+1}\nTemperatura a la mañana: {p['weather']['morning_temp']}°C - Clima a la mañana: {p['weather']['morning_desc']}\nTemperatura a la tarde: {p['weather']['afternoon_temp']}°C - Clima a la tarde: {p['weather']['afternoon_desc']}\nZona: {p['name']}\n"
+                    if (seleccion != 'alertas'):
+                        pronosticoAlertas+=f"Día {listaUrl.index(url)+1}\nTemperatura a la mañana: {p['weather']['morning_temp']}°C - Clima a la mañana: {p['weather']['morning_desc']}\nTemperatura a la tarde: {p['weather']['afternoon_temp']}°C - Clima a la tarde: {p['weather']['afternoon_desc']}\nZona: {p['name']}\n"
         if(chequeo == 0):
             pronosticoAlertas+="La ciudad ingresada no se encuentra en la base de datos o no hay pronósticos. Intente nuevamente."
         if(provincia == ""):
-            TodasAlertas(ubicacion,pronosticoAlertas, False)
+            MostrarAlertas(ubicacion,pronosticoAlertas, False)
         else:
-            TodasAlertas(provincia, pronosticoAlertas, False)
+            MostrarAlertas(provincia, pronosticoAlertas, False)
     except Exception as ex:
         messagebox.showerror("Error", ex)
 
@@ -345,13 +353,13 @@ def MenuTormenta():
     ventanaTormenta.geometry("300x340")
     ventanaTormenta.title("Tormenta")
     tk.Label(ventanaTormenta, text="Bienvenidos a Tormenta").pack()
-    btn_OpcionUno = tk.Button(ventanaTormenta, text = "Listar alertas por localización", command = lambda: CrearVentanaCiudad("Ingrese provincia\n(Deje en blanco para tomar ubicación actual)", True))
+    btn_OpcionUno = tk.Button(ventanaTormenta, text = "Listar alertas por localización", command = lambda: CrearVentanaCiudad(True))
     btn_OpcionUno.pack(pady = 10)    
-    btn_OpcionDos = tk.Button(ventanaTormenta, text = "Listar todas las alertas", command = lambda:TodasAlertas('0',"", True))
+    btn_OpcionDos = tk.Button(ventanaTormenta, text = "Listar todas las alertas", command = lambda:MostrarAlertas('0',"", True))
     btn_OpcionDos.pack(pady = 10)
     btn_OpcionTres = tk.Button(ventanaTormenta, text = "Mostrar gráficos", command = CrearVentanaEstadisticas)
     btn_OpcionTres.pack(pady = 10)
-    btn_OpcionCuatro = tk.Button(ventanaTormenta, text = "Pronóstico extendido y alertas", command = lambda: CrearVentanaCiudad("Ingrese ubicación\n(Deje en blanco para tomar ubicación actual)", False))
+    btn_OpcionCuatro = tk.Button(ventanaTormenta, text = "Pronóstico extendido y alertas", command = lambda: CrearVentanaCiudad(False))
     btn_OpcionCuatro.pack(pady = 10)
     btn_OptionFive = tk.Button(ventanaTormenta, text = "Analizar imagen", command=MostrarAlertasRadar)
     btn_OptionFive.pack(pady = 10)
@@ -384,21 +392,21 @@ def CrearVentanaEstadisticas():
     btn_OpcionCuatro.pack(pady = 10)
     tk.mainloop()
 
-def CrearVentanaCiudad(texto, soloAlertas):
+def CrearVentanaCiudad(soloAlertas):
     '''Crea la ventana para que el usuario pueda ingresar la ciudad y ver el pronóstico y/o las alertas usando la librería tkinter
     PRE: Recibe un bool el cual indica si son solo alertas o es alertas y pronóstico
     '''
     ventanaCiudad = tk.Tk()
     ventanaCiudad.geometry("300x150")
     ventanaCiudad.title("Seleccione ubicación")
-    etiquetaCiudad = tk.Label(ventanaCiudad, text = texto)
+    etiquetaCiudad = tk.Label(ventanaCiudad, text = "Ingrese ubicación\n(Deje en blanco para tomar ubicación actual)")
     etiquetaCiudad.pack(pady = 10)
     entradaCiudad = tk.Entry(ventanaCiudad)
     entradaCiudad.pack(pady = 10)
     if(soloAlertas):
-        btnBuscar = tk.Button(ventanaCiudad, text = "Buscar", command = lambda:TodasAlertas(entradaCiudad.get(), "", False))
+        btnBuscar = tk.Button(ventanaCiudad, text = "Buscar", command = lambda:VerPronosticoAlertas(entradaCiudad.get(), 'alertas'))
     else:
-        btnBuscar = tk.Button(ventanaCiudad, text = "Buscar", command = lambda:VerPronosticoAlertas(entradaCiudad.get()))
+        btnBuscar = tk.Button(ventanaCiudad, text = "Buscar", command = lambda:VerPronosticoAlertas(entradaCiudad.get(),''))
     btnBuscar.pack()
     tk.mainloop()
 
