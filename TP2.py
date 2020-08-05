@@ -219,7 +219,7 @@ def MostrarInfoEnVentana(texto):
     else:
         messagebox.showinfo("Info", "No se registraron alertas")
 
-def TodasAlertas(ubicacion,alertasStr, mostrarTodasAlertas):
+def MostrarAlertas(ubicacion,alertasStr, mostrarTodasAlertas):
     '''Recibe una provincia
     Devuelve en pantalla las alertas que involucran la provincia.
     Si se recibe '0' como provincia, muestra todas las alertas sin filtrar.
@@ -241,10 +241,11 @@ def TodasAlertas(ubicacion,alertasStr, mostrarTodasAlertas):
             for i in (q["zones"]).values():
                 encontrado = ubicacion in i
                 if(encontrado is True):
-                    alertasStr+=f"Alerta n°{contador}:\nTitulo: {q['title']}\nEstado: {q['status']}\nFecha: {q['date']}\nHora: {q['hour']}\nDescripcion: {q['description']}\Zona: {i}\nLas alertas involucran su provincia, pero pueden no involucrar su ciudad."
+                    alertasStr+=f"Alerta n°{contador}:\nTitulo: {q['title']}\nEstado: {q['status']}\nFecha: {q['date']}\nHora: {q['hour']}\nDescripcion: {q['description']}\nZona: {i}\n"
                     contador += 1
+        alertasStr+="Las alertas involucran su provincia, pero pueden no involucrar su ciudad.\n"
         if(contador == 1):
-            alertasStr+="No se han encontrado alertas para su provincia.\n"
+            alertasStr="No se han encontrado alertas para su provincia.\n"
     MostrarInfoEnVentana(alertasStr)
 
 def VerPronosticoAlertas(ubicacion):
@@ -268,7 +269,7 @@ def VerPronosticoAlertas(ubicacion):
         if(chequeo == 0):
             pronosticoAlertas+="La ciudad ingresada no se encuentra en la base de datos o no hay pronósticos. Intente nuevamente."
             MostrarInfoEnVentana(pronosticoAlertas)
-        TodasAlertas(provincia,pronosticoAlertas, False)
+        MostrarAlertas(provincia,pronosticoAlertas, False)
     except Exception as ex:
         messagebox.showerror("Error", ex)
 
@@ -343,7 +344,7 @@ def MenuTormenta():
     tk.Label(ventanaTormenta, text="Bienvenidos a Tormenta").pack()
     btn_OpcionUno = tk.Button(ventanaTormenta, text = "Listar alertas por localización", command = lambda: CrearVentanaCiudad(True))
     btn_OpcionUno.pack(pady = 10)    
-    btn_OpcionDos = tk.Button(ventanaTormenta, text = "Listar todas las alertas", command = lambda:TodasAlertas('0',"", True))
+    btn_OpcionDos = tk.Button(ventanaTormenta, text = "Listar todas las alertas", command = lambda:MostrarAlertas('0',"", True))
     btn_OpcionDos.pack(pady = 10)
     btn_OpcionTres = tk.Button(ventanaTormenta, text = "Mostrar gráficos", command = CrearVentanaEstadisticas)
     btn_OpcionTres.pack(pady = 10)
@@ -392,7 +393,7 @@ def CrearVentanaCiudad(soloAlertas):
     entradaCiudad = tk.Entry(ventanaCiudad)
     entradaCiudad.pack(pady = 10)
     if(soloAlertas):
-        btnBuscar = tk.Button(ventanaCiudad, text = "Buscar", command = lambda:TodasAlertas(entradaCiudad.get(), "", False))
+        btnBuscar = tk.Button(ventanaCiudad, text = "Buscar", command = lambda:MostrarAlertas(entradaCiudad.get(), "", False))
     else:
         btnBuscar = tk.Button(ventanaCiudad, text = "Buscar", command = lambda:VerPronosticoAlertas(entradaCiudad.get()))
     btnBuscar.pack()
