@@ -42,10 +42,13 @@ UBICACIONES_POR_DEFECTO = [
 headers = {'Content-Type':'application/json',
             'Authorization':''}
 
+def ReemplazarAcentos(texto):
+    return texto.replace("á", "a").replace("é", "e").replace("í", "i").replace("ó", "o").replace("ú", "u")
+
 def RecortarImagen(rutaImagen, pixInicial, pixFinal):
     '''Recorta la imagen que se trae por path
-    Pre: Recibe el path de una imagen y las coordenadas para recortarla
-    Post: Retorna la imagen recortada y convertida a RGB
+    PRE: Recibe el path de una imagen y las coordenadas para recortarla
+    POST: Retorna la imagen recortada y convertida a RGB
     '''
     try:
         imagen = cv2.imread(rutaImagen)
@@ -56,8 +59,8 @@ def RecortarImagen(rutaImagen, pixInicial, pixFinal):
 
 def DetectarColor(colorRgb):
     '''Detecta si el color está en el rango de los rojos o púrpuras y devuelve el pronóstico correspondiente
-    Pre: Recibe un color en formato RGB
-    Post: Devuelve el pronóstico o una string vacía en caso de no encontrarlo o de que el color sea nulo
+    PRE: Recibe un color en formato RGB
+    POST: Devuelve el pronóstico o una string vacía en caso de no encontrarlo o de que el color sea nulo
     '''
     try:
         if(colorRgb!='T'):
@@ -72,8 +75,8 @@ def DetectarColor(colorRgb):
 
 def RetornarLocalizacionDePixels(x, y):
     '''Devuelve la zona específicada en la constante a través de una comparación en rangos de coordenadas
-    Pre: Recibe las coordenadas x y
-    Post: Devuelve la zona o en caso de no encontrarla, devuelve Zona desconocida
+    PRE: Recibe las coordenadas x y
+    POST: Devuelve la zona o en caso de no encontrarla, devuelve Zona desconocida
     '''
     for region in UBICACIONES_POR_DEFECTO:
         if((x>region[1] and x<region[2]) and (y>region[3] and y<region[4])):
@@ -222,7 +225,6 @@ def MostrarInfoEnVentana(texto):
 def TodasAlertas(ubicacion,alertasStr, mostrarTodasAlertas):
     '''Recibe una provincia
     Devuelve en pantalla las alertas que involucran la provincia.
-    Si se recibe '0' como provincia, muestra todas las alertas sin filtrar.
     PRE: Recibe la provincia, una string en caso de tener que mostrar previamente el pronóstico extendido y un bool que indica si debe mostrar todas las alertas
     '''
     alertas = ObtenerObjetoJSON(ALERTAS_URL)
@@ -254,8 +256,8 @@ def VerPronosticoAlertas(ubicacion):
     '''
     try:
         listaUrl = ObtenerURL()
-        provincia = ""
         chequeo = 0
+        provincia = ""
         pronosticoAlertas = ""
         if(ubicacion==""):
             ubicacion = RetornarLocalizacion(3)
@@ -267,8 +269,10 @@ def VerPronosticoAlertas(ubicacion):
                     pronosticoAlertas+=f"Día {listaUrl.index(url)+1}\nTemperatura a la mañana: {p['weather']['morning_temp']}°C - Clima a la mañana: {p['weather']['morning_desc']}\nTemperatura a la tarde: {p['weather']['afternoon_temp']}°C - Clima a la tarde: {p['weather']['afternoon_desc']}\nZona: {p['name']}\n"
         if(chequeo == 0):
             pronosticoAlertas+="La ciudad ingresada no se encuentra en la base de datos o no hay pronósticos. Intente nuevamente."
-            MostrarInfoEnVentana(pronosticoAlertas)
-        TodasAlertas(provincia,pronosticoAlertas, False)
+        if(provincia == ""):
+            TodasAlertas(ubicacion,pronosticoAlertas, False)
+        else:
+            TodasAlertas(provincia, pronosticoAlertas, False)
     except Exception as ex:
         messagebox.showerror("Error", ex)
 
@@ -341,13 +345,13 @@ def MenuTormenta():
     ventanaTormenta.geometry("300x340")
     ventanaTormenta.title("Tormenta")
     tk.Label(ventanaTormenta, text="Bienvenidos a Tormenta").pack()
-    btn_OpcionUno = tk.Button(ventanaTormenta, text = "Listar alertas por localización", command = lambda: CrearVentanaCiudad(True))
+    btn_OpcionUno = tk.Button(ventanaTormenta, text = "Listar alertas por localización", command = lambda: CrearVentanaCiudad("Ingrese provincia\n(Deje en blanco para tomar ubicación actual)", True))
     btn_OpcionUno.pack(pady = 10)    
     btn_OpcionDos = tk.Button(ventanaTormenta, text = "Listar todas las alertas", command = lambda:TodasAlertas('0',"", True))
     btn_OpcionDos.pack(pady = 10)
     btn_OpcionTres = tk.Button(ventanaTormenta, text = "Mostrar gráficos", command = CrearVentanaEstadisticas)
     btn_OpcionTres.pack(pady = 10)
-    btn_OpcionCuatro = tk.Button(ventanaTormenta, text = "Pronóstico extendido y alertas", command = lambda: CrearVentanaCiudad(False))
+    btn_OpcionCuatro = tk.Button(ventanaTormenta, text = "Pronóstico extendido y alertas", command = lambda: CrearVentanaCiudad("Ingrese ubicación\n(Deje en blanco para tomar ubicación actual)", False))
     btn_OpcionCuatro.pack(pady = 10)
     btn_OptionFive = tk.Button(ventanaTormenta, text = "Analizar imagen", command=MostrarAlertasRadar)
     btn_OptionFive.pack(pady = 10)
@@ -380,14 +384,14 @@ def CrearVentanaEstadisticas():
     btn_OpcionCuatro.pack(pady = 10)
     tk.mainloop()
 
-def CrearVentanaCiudad(soloAlertas):
+def CrearVentanaCiudad(texto, soloAlertas):
     '''Crea la ventana para que el usuario pueda ingresar la ciudad y ver el pronóstico y/o las alertas usando la librería tkinter
     PRE: Recibe un bool el cual indica si son solo alertas o es alertas y pronóstico
     '''
     ventanaCiudad = tk.Tk()
     ventanaCiudad.geometry("300x150")
     ventanaCiudad.title("Seleccione ubicación")
-    etiquetaCiudad = tk.Label(ventanaCiudad, text = "Ingrese ubicación\n(Deje en blanco para tomar ubicación actual)")
+    etiquetaCiudad = tk.Label(ventanaCiudad, text = texto)
     etiquetaCiudad.pack(pady = 10)
     entradaCiudad = tk.Entry(ventanaCiudad)
     entradaCiudad.pack(pady = 10)
