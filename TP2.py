@@ -256,7 +256,7 @@ def TodasAlertas(provincia,alertasStr):
             alertasStr+="No se han encontrado alertas para su provincia.\n"
         MostrarAlertasEnVentana(alertasStr)
 
-def VerPronostico(ciudad):
+def VerPronostico(ciudad,tipo):
     '''Recibe una ciudad ingresada por el usuario.
     En caso de encontrar la ciudad en la base de datos, devuelve en pantalla el pronostico extendido para esa ciudad, y llama a la funcion de verAlertas con la provincia donde se encuentra la ciudad.
     PRE: Recibe una ciudad ingresada por el usuario
@@ -270,8 +270,12 @@ def VerPronostico(ciudad):
             for p in url:
                 if(p["name"] == ciudad):
                     chequeo += 1
-                    provincia = p["province"]
-                    alertasStr+=f"Día {listaUrl.index(url)+1}\nTemperatura a la mañana: {p['weather']['morning_temp']}°C - Clima a la mañana: {p['weather']['morning_desc']}\nTemperatura a la tarde: {p['weather']['afternoon_temp']}°C - Clima a la tarde: {p['weather']['afternoon_desc']}\n"
+                    if(tipo == "alertas"):
+                        provincia = p["province"]
+                        TodasAlertas(provincia,alertasStr)
+                    elif(tipo == "pronostico"):
+                        provincia = p["province"]
+                        alertasStr+=f"Día {listaUrl.index(url)+1}\nTemperatura a la mañana: {p['weather']['morning_temp']}°C - Clima a la mañana: {p['weather']['morning_desc']}\nTemperatura a la tarde: {p['weather']['afternoon_temp']}°C - Clima a la tarde: {p['weather']['afternoon_desc']}\n"
         if(chequeo == 0):
             alertasStr+="La ciudad ingresada no se encuentra en la base de datos. Intente nuevamente."
             MostrarAlertasEnVentana(alertasStr)
@@ -387,7 +391,7 @@ def CrearVentanaCiudad():
     etiquetaCiudad.pack(pady = 10)
     entradaCiudad = tk.Entry(ventanaCiudad)
     entradaCiudad.pack(pady = 10)
-    btnBuscar = tk.Button(ventanaCiudad, text = "Buscar", command = lambda:VerPronostico(entradaCiudad.get()))
+    btnBuscar = tk.Button(ventanaCiudad, text = "Buscar", command = lambda:VerPronostico(entradaCiudad.get(),"pronostico"))
     btnBuscar.pack()
     tk.mainloop()
 
