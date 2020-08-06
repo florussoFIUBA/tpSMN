@@ -247,18 +247,19 @@ def MostrarAlertas(ubicacion, alertasStr, mostrarTodasAlertas):
         else:
             if(ubicacion==""):
                 ubicacion = RetornarLocalizacion(3)
-            for q in alertas:
-                for i in (q["zones"]).values():
-                    encontrado = ubicacion in i
-                    if(encontrado is True):
-                        alertasStr+=f"Alerta n°{contador}:\nTitulo: {q['title']}\nEstado: {q['status']}\nFecha: {q['date']}\nHora: {q['hour']}\nDescripcion: {q['description']}\nZona: {i}\n"
-                        contador += 1
-            if(contador >1):
-                alertasStr+="Las alertas involucran su provincia, pero pueden no involucrar su ciudad.\n"
-            elif(contador == 1):
-                alertasStr+="No se han encontrado alertas para su provincia.\n"
-            elif(ubicacion=="Error al traer la ubicación actual"):
-                alertasStr+=ubicacion
+            if(ubicacion!="Error al traer la ubicación actual"):
+                for q in alertas:
+                    for i in (q["zones"]).values():
+                        encontrado = ubicacion in i
+                        if(encontrado is True):
+                            alertasStr+=f"Alerta n°{contador}:\nTitulo: {q['title']}\nEstado: {q['status']}\nFecha: {q['date']}\nHora: {q['hour']}\nDescripcion: {q['description']}\nZona: {i}\n"
+                            contador += 1
+                if(contador >1):
+                    alertasStr+="Las alertas involucran su provincia, pero pueden no involucrar su ciudad.\n"
+                elif(contador == 1):
+                    alertasStr+="No se han encontrado alertas para su provincia.\n"
+            else:
+                alertasStr=ubicacion
         MostrarInfoEnVentana(alertasStr)
     else:
         messagebox.showerror("Error", ex)
