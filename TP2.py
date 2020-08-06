@@ -178,8 +178,8 @@ def ObtenerSMNjson(url):
         response = requests.get(url, headers=headers)
         rawJson = json.loads(response.content.decode('utf-8'))
         return json.dumps(rawJson, sort_keys=True, indent=4, default=rawJson)
-    except requests.exceptions.RequestException as ex: 
-        return SystemExit(ex)
+    except Exception as ex: 
+        return ex
 
 
 def ObtenerObjetoJSON(url):
@@ -187,15 +187,12 @@ def ObtenerObjetoJSON(url):
     PRE: Recibe una url de un json\n
     POST: Devuelve el json como objeto
     '''
-    try:
-        info = ObtenerSMNjson(url)
-        if(not isinstance(info, Exception)):
-            objJson=json.loads(info)
-        else:
-            objJson={}        
-        return objJson
-    except Exception as ex:
-        return ex
+    info = ObtenerSMNjson(url)
+    if(not isinstance(info, Exception)):
+        objJson = json.loads(info)
+    else:
+        objJson = info
+    return objJson
 
 def ObtenerURL():
     '''Crea una lista con los jsons de los pronosticos para cada dia, para poder iterar cada dia de pronosticos en la funcion VerPronostico.\n
@@ -230,28 +227,33 @@ def MostrarAlertas(ubicacion, alertasStr, mostrarTodasAlertas):
     PRE: Recibe la provincia, una string en caso de tener que mostrar previamente el pronóstico extendido y un bool que indica si debe mostrar todas las alertas
     '''
     alertas = ObtenerObjetoJSON(ALERTAS_URL)
-    contador = 1
-    if(mostrarTodasAlertas):
-        for p in alertas:
-            alertasStr+=f"Alerta n°{contador}\nTitulo: {p['title']}\nEstado: {p['status']}\Fecha: {p['date']}\nHora: {p['hour']}\nDescripcion: {p['description']}\nZonas: \n"
-            for i in (p["zones"]).values():
-                alertasStr += f"{i}\n"
-            alertasStr+="\n\n"
-            contador += 1
+    if(not isinstance(alertas, Exception)):
+        contador = 1
+        if(mostrarTodasAlertas):
+            for p in alertas:
+                alertasStr+=f"Alerta n°{contador}\nTitulo: {p['title']}\nEstado: {p['status']}\Fecha: {p['date']}\nHora: {p['hour']}\nDescripcion: {p['description']}\nZonas: \n"
+                for i in (p["zones"]).values():
+                    alertasStr += f"{i}\n"
+                alertasStr+="\n\n"
+                contador += 1
+        else:
+            if(ubicacion==""):
+                ubicacion = RetornarLocalizacion(3)
+            for q in alertas:
+                for i in (q["zones"]).values():
+                    encontrado = ubicacion in i
+                    if(encontrado is True):
+                        alertasStr+=f"Alerta n°{contador}:\nTitulo: {q['title']}\nEstado: {q['status']}\nFecha: {q['date']}\nHora: {q['hour']}\nDescripcion: {q['description']}\nZona: {i}\n"
+                        contador += 1
+            if(contador >1):
+                alertasStr+="Las alertas involucran su provincia, pero pueden no involucrar su ciudad.\n"
+            elif(contador == 1):
+                alertasStr+="No se han encontrado alertas para su provincia.\n"
+            elif(ubicacion=="Error al traer la ubicación actual"):
+                alertasStr+=ubicacion
+        MostrarInfoEnVentana(alertasStr)
     else:
-        if(ubicacion==""):
-            ubicacion = RetornarLocalizacion(3)
-        for q in alertas:
-            for i in (q["zones"]).values():
-                encontrado = ubicacion in i
-                if(encontrado is True):
-                    alertasStr+=f"Alerta n°{contador}:\nTitulo: {q['title']}\nEstado: {q['status']}\nFecha: {q['date']}\nHora: {q['hour']}\nDescripcion: {q['description']}\nZona: {i}\n"
-                    contador += 1
-        if(contador >1):
-            alertasStr+="Las alertas involucran su provincia, pero pueden no involucrar su ciudad.\n"
-        elif(contador == 1):
-            alertasStr+="No se han encontrado alertas para su provincia.\n"
-    MostrarInfoEnVentana(alertasStr)
+        messagebox.showerror("Error", ex)
 
 def VerPronosticoAlertas(ubicacion, seleccion):
     '''Recibe una ubicación ingresada por el usuario.\n
@@ -264,30 +266,39 @@ def VerPronosticoAlertas(ubicacion, seleccion):
     pronosticoAlertas = ""
     if(ubicacion==""):
         ubicacion = RetornarLocalizacion(3)
-    ubicacion = ReemplazarAcentos(ubicacion.lower())
-    for url in listaUrl:
-        for p in url:
-            if(ReemplazarAcentos(p["province"].lower()) == ubicacion or ReemplazarAcentos(p["name"].lower())==ubicacion):
-                chequeo += 1
-                provincia = p["province"]
-                if (seleccion):
-                    pronosticoAlertas+=f"Día {listaUrl.index(url)+1}\nTemperatura a la mañana: {p['weather']['morning_temp']}°C - Clima a la mañana: {p['weather']['morning_desc']}\nTemperatura a la tarde: {p['weather']['afternoon_temp']}°C - Clima a la tarde: {p['weather']['afternoon_desc']}\nZona: {p['name']}\n"
-    if(chequeo == 0):
-        pronosticoAlertas+="La ciudad ingresada no se encuentra en la base de datos o no hay pronósticos. Intente nuevamente."
-    if(provincia == ""):
-        MostrarAlertas(ubicacion,pronosticoAlertas, False)
+    if(ubicacion!="Error al traer la ubicación actual"):
+        ubicacion = ReemplazarAcentos(ubicacion.lower())
+        for url in listaUrl:
+            if(not isinstance(url, Exception)):
+                for p in url:
+                    if(ReemplazarAcentos(p["province"].lower()) == ubicacion or ReemplazarAcentos(p["name"].lower())==ubicacion):
+                        chequeo += 1
+                        provincia = p["province"]
+                        if (seleccion):
+                            pronosticoAlertas+=f"Día {listaUrl.index(url)+1}\nTemperatura a la mañana: {p['weather']['morning_temp']}°C - Clima a la mañana: {p['weather']['morning_desc']}\nTemperatura a la tarde: {p['weather']['afternoon_temp']}°C - Clima a la tarde: {p['weather']['afternoon_desc']}\nZona: {p['name']}\n"
+            else:
+                messagebox.showerror("Error", ex)
+        if(chequeo == 0):
+            pronosticoAlertas+="La ciudad ingresada no se encuentra en la base de datos o no hay pronósticos. Intente nuevamente."
+        if(provincia == ""):
+            MostrarAlertas(ubicacion,pronosticoAlertas, False)
+        else:
+            MostrarAlertas(provincia, pronosticoAlertas, False)
     else:
-        MostrarAlertas(provincia, pronosticoAlertas, False)
+        messagebox.show(ubicacion)
 
 def MostrarValoresMaximos(df, nombreColumna, tipoDato, periodo):
     '''Muestra la información basado en un dataframe, nombre de columba y período en años\n
     PRE: Recibe un dataframe, la columna por la cual va a buscar, el tipo de dato y el período expresado en años
     '''
-    if (ValidarNaturales(periodo) !=0):
-        periodo = f"{str(periodo)}Y"
-        messagebox.showinfo(message=f"{tipoDato}: {RetornarInformacionCsv(df, nombreColumna, periodo)}")
+    if(not isinstance(df, Exception)):
+        if (ValidarNaturales(periodo) !=0):
+            periodo = f"{str(periodo)}Y"
+            messagebox.showinfo(message=f"{tipoDato}: {RetornarInformacionCsv(df, nombreColumna, periodo)}")
+        else:
+            messagebox.showerror("Error", "Ingreso invalido. Debe ingresar un numero entero mayor a 0")
     else:
-        messagebox.showerror("Error", "Ingreso invalido. Debe ingresar un numero entero mayor a 0")
+        messagebox.showerror("Error", df)
 
 
 def CrearGrafico(df, ultimosAnios, tema):
@@ -295,34 +306,38 @@ def CrearGrafico(df, ultimosAnios, tema):
     PRE: Recibe un dataframe, un entero con el periodo en años y un booleano (True para temperaturas, False para humedad).\n
     POST: Grafico con los valores correspondientes del dataframe.
     '''
-    listaAnio=[]
-    df['Date'] = pd.to_datetime(df['Date']).dt.date
-    fechaHoy=(pd.to_datetime('today')).date()
-    listaTempMax = []
-    listaTempMin = []
-    listaHumedad = []
-    if (ValidarNaturales(ultimosAnios) != 0):
-        for i in range(ultimosAnios, -1, -1):
-            fechaInicio=fechaHoy.replace(year=fechaHoy.year-i, month=1, day =1)
-            fechaFin=fechaHoy.replace(year=fechaHoy.year-i, month=12, day=31)
-            listaAnio.append(fechaInicio.year)
+    if(not isinstance(df, Exception)):
+        ultimosAnios = ValidarNaturales(ultimosAnios)
+        listaAnio=[]
+        df['Date'] = pd.to_datetime(df['Date']).dt.date
+        fechaHoy=(pd.to_datetime('today')).date()
+        listaTempMax = []
+        listaTempMin = []
+        listaHumedad = []
+        if (ultimosAnios != 0):
+            for i in range(ultimosAnios, -1, -1):
+                fechaInicio=fechaHoy.replace(year=fechaHoy.year-i, month=1, day =1)
+                fechaFin=fechaHoy.replace(year=fechaHoy.year-i, month=12, day=31)
+                listaAnio.append(fechaInicio.year)
+                if(tema):
+                    listaTempMax.append(df.loc[((df['Date']<=fechaFin) & (df['Date']>=fechaInicio)), 'Max Temperature'].mean())
+                    listaTempMin.append(df.loc[((df['Date']<=fechaFin) & (df['Date']>=fechaInicio)), 'Min Temperature'].mean())
+                else:
+                    listaHumedad.append(df.loc[((df['Date']<=fechaFin) & (df['Date']>=fechaInicio)), 'Relative Humidity'].mean())
             if(tema):
-                listaTempMax.append(df.loc[((df['Date']<=fechaFin) & (df['Date']>=fechaInicio)), 'Max Temperature'].mean())
-                listaTempMin.append(df.loc[((df['Date']<=fechaFin) & (df['Date']>=fechaInicio)), 'Min Temperature'].mean())
+                dfPromedioTemp=pd.DataFrame({'Temperatura Maxima':listaTempMax, 'Temperatura Minima':listaTempMin}, index=listaAnio)
+                grafico=dfPromedioTemp.plot.bar(title='Promedio de temperaturas anuales')
             else:
-                listaHumedad.append(df.loc[((df['Date']<=fechaFin) & (df['Date']>=fechaInicio)), 'Relative Humidity'].mean())
-        if(tema):
-            dfPromedioTemp=pd.DataFrame({'Temperatura Maxima':listaTempMax, 'Temperatura Minima':listaTempMin}, index=listaAnio)
-            grafico=dfPromedioTemp.plot.bar(title='Promedio de temperaturas anuales')
-        else:
-            dfPromedioHum=pd.DataFrame({'Promedio humedad':listaHumedad}, index=listaAnio)
-            grafico=dfPromedioHum.plot.bar(title='Promedio de humedad')
+                dfPromedioHum=pd.DataFrame({'Promedio humedad':listaHumedad}, index=listaAnio)
+                grafico=dfPromedioHum.plot.bar(title='Promedio de humedad')
 
-        grafico.set_xlabel("Año")
-        grafico.set_ylabel("Promedio")
-        plt.show()
+            grafico.set_xlabel("Año")
+            grafico.set_ylabel("Promedio")
+            plt.show()
+        else:
+            messagebox.showerror("Error", "Ingreso invalido. Debe ingresar un numero entero mayor a 0")
     else:
-        messagebox.showerror("Error", "Ingreso invalido. Debe ingresar un numero entero mayor a 0")
+        messagebox.showerror("Error", df)
     
 
 def SeleccionarArchivoCsv():
