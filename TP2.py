@@ -43,15 +43,15 @@ headers = {'Content-Type':'application/json',
             'Authorization':''}
 
 def ReemplazarAcentos(texto):
-    '''Reemplaza los acentos de un texto dado
-    PRE: Recibe un string
+    '''Reemplaza los acentos de un texto dado\n
+    PRE: Recibe un string\n
     POST: Devuelve el string reemplazando los acentos correspondientes al Castellano
     '''
     return texto.replace("á", "a").replace("é", "e").replace("í", "i").replace("ó", "o").replace("ú", "u")
 
 def RecortarImagen(rutaImagen, pixInicial, pixFinal):
-    '''Recorta la imagen que se trae por path
-    PRE: Recibe el path de una imagen y las coordenadas para recortarla
+    '''Recorta la imagen que se trae por path\n
+    PRE: Recibe el path de una imagen y las coordenadas para recortarla\n
     POST: Retorna la imagen recortada y convertida a RGB
     '''
     try:
@@ -62,24 +62,28 @@ def RecortarImagen(rutaImagen, pixInicial, pixFinal):
         return ex        
 
 def DetectarColor(colorRgb):
-    '''Detecta si el color está en el rango de los rojos o púrpuras y devuelve el pronóstico correspondiente
-    PRE: Recibe un color en formato RGB
+    '''Detecta si el color está en el rango de los rojos o púrpuras y devuelve el pronóstico correspondiente\n
+    PRE: Recibe un color en formato RGB\n
     POST: Devuelve el pronóstico o una string vacía en caso de no encontrarlo o de que el color sea nulo
     '''
     try:
         if(colorRgb!='T'):
             if(colorRgb[2]>-1 and colorRgb[2]<101 and colorRgb[1]>-1 and colorRgb[1]<101 and colorRgb[0]>149):
-                return "TORMENTAS DE MUCHA LLUVIA"
+                return "Tormentas de mucha lluvia"
             elif(colorRgb[2]>149 and colorRgb[1]>-1 and colorRgb[1]<101 and colorRgb[0]>149):
-                return "TORMENTAS FUERTES CON GRANIZO"
+                return "Tormentas fuertes con granizo"
+            elif(colorRgb[2]<=171 and colorRgb[1]>99 and colorRgb[0]<155):
+                return "Tormentas moderadas"
+            elif(colorRgb[2]>111 and colorRgb[1]<249 and colorRgb[0]<241):
+                return "Tormentas débiles"
         return ""
     except Exception as ex:
         messagebox.showerror("Error", ex)
         return ""
 
 def RetornarLocalizacionDePixels(x, y):
-    '''Devuelve la zona específicada en la constante a través de una comparación en rangos de coordenadas
-    PRE: Recibe las coordenadas x y
+    '''Devuelve la zona específicada en la constante a través de una comparación en rangos de coordenadas\n
+    PRE: Recibe las coordenadas x y\n
     POST: Devuelve la zona o en caso de no encontrarla, devuelve Zona desconocida
     '''
     for region in UBICACIONES_POR_DEFECTO:
@@ -88,8 +92,8 @@ def RetornarLocalizacionDePixels(x, y):
     return "Zona desconocida" 
 
 def TraerAlertasDeImagen(imagen):
-    '''Retorna las alertas en un string formateado
-    PRE: Recibe una imagen en formato array
+    '''Retorna las alertas en un string formateado\n
+    PRE: Recibe una imagen en formato array\n
     POST: Devuelve una string conteniendo las alertas en las distintas zonas
     '''
     try:
@@ -103,18 +107,18 @@ def TraerAlertasDeImagen(imagen):
                     pronostico = DetectarColor(currentColor)
                     if (pronostico != ""):
                         location = RetornarLocalizacionDePixels(x, y)
-                        pronosticoZona = f"{pronostico} en {RetornarLocalizacionDePixels(x, y)}"
+                        pronosticoZona = f"{location}: {pronostico}"
                         if(pronosticoZona not in pronosticosTotales):
                             pronosticosTotales.append(pronosticoZona)
-            return '\n'.join(pronosticosTotales)
+            return '\n'.join(sorted(pronosticosTotales))
         else:
             return imagen
     except Exception as ex:
         return ex
 
 def CrearCsvDataFrame(archivo):
-    '''Crea dataFramework con los datos del archivo csv
-    PRE: Recive el path de un archivo CSV
+    '''Crea dataFramework con los datos del archivo csv\n
+    PRE: Recive el path de un archivo CSV\n
     POST: Devuelve un dataframe con la información del archivo
     '''
     try:
@@ -124,18 +128,16 @@ def CrearCsvDataFrame(archivo):
         return ex
 
 def RetornarInformacionCsv(csvDataFrame, nombreColumna, periodo):
-    '''Función que retorna los valores máximos de una columna especificada en un período de tiempo expresado en años
-    PRE: Recibe un dataframe, la columna por la cual va a buscar la información y el período expresado en años
+    '''Función que retorna los valores máximos de una columna especificada en un período de tiempo expresado en años\n
+    PRE: Recibe un dataframe, la columna por la cual va a buscar la información y el período expresado en años\n
     POST: Devuelve el valor máximo
     '''
     csvDataFrame['Date'] = pd.to_datetime(csvDataFrame.Date)
     pastYears = csvDataFrame.set_index('Date').last(periodo)
     return pastYears[nombreColumna].max()
-   
-
 
 def RetornarLocalizacionActual():
-    '''Usando la libreria geocoder, devuelve la geolocalización basada en IP (lat long).
+    '''Usando la libreria geocoder, devuelve la geolocalización basada en IP (lat long).\n
     POST: Devuelve la latitud y longitud aproximada de la IP del usuario
     '''
     try:
@@ -145,34 +147,31 @@ def RetornarLocalizacionActual():
         return ex
 
 def RetornarLocalizacion(indiceLocalidad):
-    '''Recibe un índice de ubicación, el cual es 3 para la provincia y 2 para la ciudad.
-    Devuelve la 'ciudad' o 'provincia' donde se encuentra el usuario, respectivamente.
-    Glosario de índices:
-    0: Número aproximado en la calle
-    1: Nombre de la calle
-    2: Ciudad o barrio
-    3: Provincia
-    4: Comuna o barrio/zona
-    5: Código postal aproximado
-    6: País
-    PRE: Recibe el indice de localidad
+    '''Recibe un índice de ubicación, el cual es 3 para la provincia y 2 para la ciudad.\n
+    Devuelve la 'ciudad' o 'provincia' donde se encuentra el usuario, respectivamente.\n
+    Glosario de índices:\n
+    0: Número aproximado en la calle\n
+    1: Nombre de la calle\n
+    2: Ciudad o barrio\n
+    3: Provincia\n
+    4: Comuna o barrio/zona\n
+    5: Código postal aproximado\n
+    6: País\n
+    PRE: Recibe el indice de localidad\n
     POST: Devuelve el nombre de la provincia o ciudad (o barrio) en la que se encuentra el usuario
     '''
-    try:
-        latLong = RetornarLocalizacionActual()
-        if(not isinstance(latLong, Exception)):
-            geolocator = Nominatim(user_agent="tp2")
-            location = geolocator.reverse(f"{latLong[0]}, {latLong[1]}")
-            return "".join(location.address.split(',')[indiceLocalidad][1:])
-        else:
-            return "Error al traer la ubicación actual"
-    except Exception as ex:
-        return ex
+    latLong = RetornarLocalizacionActual()
+    if(not isinstance(latLong, Exception)):
+        geolocator = Nominatim(user_agent="tp2")
+        location = geolocator.reverse(f"{latLong[0]}, {latLong[1]}")
+        return "".join(location.address.split(',')[indiceLocalidad][1:])
+    else:
+        return "Error al traer la ubicación actual"
 
 
 def ObtenerSMNjson(url):
-    '''Recibe un link url, y devuelve un archivo Json "crudo" en formato JSON String.
-    PRE: Recibe una url de un archivo json
+    '''Recibe un link url, y devuelve un archivo Json "crudo" en formato JSON String.\n
+    PRE: Recibe una url de un archivo json\n
     POST: Devuelve el respectivo json
     '''
     try:
@@ -184,8 +183,8 @@ def ObtenerSMNjson(url):
 
 
 def ObtenerObjetoJSON(url):
-    '''Recibe un Json string y lo devuelve como un objeto Json para que pueda ser abierto e interpretado facilmente.
-    PRE: Recibe una url de un json
+    '''Recibe un Json string y lo devuelve como un objeto Json para que pueda ser abierto e interpretado facilmente.\n
+    PRE: Recibe una url de un json\n
     POST: Devuelve el json como objeto
     '''
     try:
@@ -199,7 +198,7 @@ def ObtenerObjetoJSON(url):
         return ex
 
 def ObtenerURL():
-    '''Crea una lista con los jsons de los pronosticos para cada dia, para poder iterar cada dia de pronosticos en la funcion VerPronostico.
+    '''Crea una lista con los jsons de los pronosticos para cada dia, para poder iterar cada dia de pronosticos en la funcion VerPronostico.\n
     POST: Devuelve una lista de listas con todos los pronósticos de 1 a 3 días
     '''
     listaUrl = []
@@ -210,7 +209,7 @@ def ObtenerURL():
     return listaUrl
 
 def MostrarInfoEnVentana(texto):
-    '''Recibe una cadena, abre un cuadro de texto en una ventana e imprime la cadena dentro de dicho cuadro.
+    '''Recibe una cadena, abre un cuadro de texto en una ventana e imprime la cadena dentro de dicho cuadro.\n
     PRE: Recibe un string con el texto
     '''
     if(texto!=""):
@@ -226,8 +225,8 @@ def MostrarInfoEnVentana(texto):
         messagebox.showinfo("Info", "No se registraron alertas")
 
 def MostrarAlertas(ubicacion, alertasStr, mostrarTodasAlertas):
-    '''Recibe una provincia
-    Devuelve en pantalla las alertas que involucran la provincia.
+    '''Recibe una provincia\n
+    Devuelve en pantalla las alertas que involucran la provincia.\n
     PRE: Recibe la provincia, una string en caso de tener que mostrar previamente el pronóstico extendido y un bool que indica si debe mostrar todas las alertas
     '''
     alertas = ObtenerObjetoJSON(ALERTAS_URL)
@@ -255,11 +254,10 @@ def MostrarAlertas(ubicacion, alertasStr, mostrarTodasAlertas):
     MostrarInfoEnVentana(alertasStr)
 
 def VerPronosticoAlertas(ubicacion, seleccion):
-    '''Recibe una ubicación ingresada por el usuario.
-    En caso de encontrar la ciudad en la base de datos, devuelve en pantalla el pronostico extendido para esa ciudad, y llama a la funcion de verAlertas con la provincia donde se encuentra la ciudad.
+    '''Recibe una ubicación ingresada por el usuario.\n
+    En caso de encontrar la ciudad en la base de datos, devuelve en pantalla el pronostico extendido para esa ciudad, y llama a la funcion de verAlertas con la provincia donde se encuentra la ciudad.\n
     PRE: Recibe una ciudad ingresada por el usuario
     '''
-    
     listaUrl = ObtenerURL()
     chequeo = 0
     provincia = ""
@@ -282,10 +280,9 @@ def VerPronosticoAlertas(ubicacion, seleccion):
         MostrarAlertas(provincia, pronosticoAlertas, False)
 
 def MostrarValoresMaximos(df, nombreColumna, tipoDato, periodo):
-    '''Muestra la información basado en un dataframe, nombre de columba y período en años
+    '''Muestra la información basado en un dataframe, nombre de columba y período en años\n
     PRE: Recibe un dataframe, la columna por la cual va a buscar, el tipo de dato y el período expresado en años
     '''
-    
     if (ValidarNaturales(periodo) !=0):
         periodo = f"{str(periodo)}Y"
         messagebox.showinfo(message=f"{tipoDato}: {RetornarInformacionCsv(df, nombreColumna, periodo)}")
@@ -294,12 +291,10 @@ def MostrarValoresMaximos(df, nombreColumna, tipoDato, periodo):
 
 
 def CrearGrafico(df, ultimosAnios, tema):
-    '''
-    Muestra grafico con el promedio de temperaturas maximas y minimas anuales o humedad durante el periodo de tiempo especificado por (periodo).
-    PRE: Recibe un dataframe, un entero con el periodo en años y un booleano (True para temperaturas, False para humedad).
+    '''Muestra grafico con el promedio de temperaturas maximas y minimas anuales o humedad durante el periodo de tiempo especificado por (periodo).\n
+    PRE: Recibe un dataframe, un entero con el periodo en años y un booleano (True para temperaturas, False para humedad).\n
     POST: Grafico con los valores correspondientes del dataframe.
     '''
-    
     listaAnio=[]
     df['Date'] = pd.to_datetime(df['Date']).dt.date
     fechaHoy=(pd.to_datetime('today')).date()
@@ -331,7 +326,7 @@ def CrearGrafico(df, ultimosAnios, tema):
     
 
 def SeleccionarArchivoCsv():
-    '''Abre un open file dialog para que el usuario seleccione un archivo csv
+    '''Abre un open file dialog para que el usuario seleccione un archivo csv\n
     POST: Retorna el path del archivo csv
     '''
     csvDireccion = filedialog.askopenfilename(title="Seleccione el archivo csv", filetypes=EXTENSIONES_CSV)
@@ -347,11 +342,11 @@ def MostrarAlertasRadar():
     if (len(imagePath) == 0):
         messagebox.showerror("Error", "Debe ingresar un archivo para procesar.")
     else:
-        messagebox.showinfo("Alertas",TraerAlertasDeImagen(RecortarImagen(imagePath,[15, 555], [21, 755])))
+        MostrarInfoEnVentana(TraerAlertasDeImagen(RecortarImagen(imagePath,[15, 555], [21, 755])))
 
 def ValidarNaturales(numero):
-    '''
-    Valida que numero sea de tipo entero y de serlo, que sea natural.
+    '''Valida que numero sea de tipo entero y de serlo, que sea natural.\n
+    PRE: Recibe el input del usuario\n
     POST: Retorna el numero natural ingresado o 0 si el ingreso no es el adecuado.
     '''
     try:
@@ -410,7 +405,7 @@ def CrearVentanaEstadisticas():
     tk.mainloop()
 
 def CrearVentanaCiudad(soloAlertas):
-    '''Crea la ventana para que el usuario pueda ingresar la ciudad y ver el pronóstico y/o las alertas usando la librería tkinter
+    '''Crea la ventana para que el usuario pueda ingresar la ciudad y ver el pronóstico y/o las alertas usando la librería tkinter\n
     PRE: Recibe un bool el cual indica si son solo alertas o es alertas y pronóstico
     '''
     ventanaCiudad = tk.Tk()
