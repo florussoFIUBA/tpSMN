@@ -128,12 +128,11 @@ def RetornarInformacionCsv(csvDataFrame, nombreColumna, periodo):
     PRE: Recibe un dataframe, la columna por la cual va a buscar la información y el período expresado en años
     POST: Devuelve el valor máximo
     '''
-    try:
-        csvDataFrame['Date'] = pd.to_datetime(csvDataFrame.Date)
-        pastYears = csvDataFrame.set_index('Date').last(periodo)
-        return pastYears[nombreColumna].max()
-    except Exception as ex:
-       return ex
+    csvDataFrame['Date'] = pd.to_datetime(csvDataFrame.Date)
+    pastYears = csvDataFrame.set_index('Date').last(periodo)
+    return pastYears[nombreColumna].max()
+   
+
 
 def RetornarLocalizacionActual():
     '''Usando la libreria geocoder, devuelve la geolocalización basada en IP (lat long).
@@ -260,72 +259,76 @@ def VerPronosticoAlertas(ubicacion, seleccion):
     En caso de encontrar la ciudad en la base de datos, devuelve en pantalla el pronostico extendido para esa ciudad, y llama a la funcion de verAlertas con la provincia donde se encuentra la ciudad.
     PRE: Recibe una ciudad ingresada por el usuario
     '''
-    try:
-        listaUrl = ObtenerURL()
-        chequeo = 0
-        provincia = ""
-        pronosticoAlertas = ""
-        if(ubicacion==""):
-            ubicacion = RetornarLocalizacion(3)
-        ubicacion = ReemplazarAcentos(ubicacion.lower())
-        for url in listaUrl:
-            for p in url:
-                if(ReemplazarAcentos(p["province"].lower()) == ubicacion or ReemplazarAcentos(p["name"].lower())==ubicacion):
-                    chequeo += 1
-                    provincia = p["province"]
-                    if (seleccion != 'alertas'):
-                        pronosticoAlertas+=f"Día {listaUrl.index(url)+1}\nTemperatura a la mañana: {p['weather']['morning_temp']}°C - Clima a la mañana: {p['weather']['morning_desc']}\nTemperatura a la tarde: {p['weather']['afternoon_temp']}°C - Clima a la tarde: {p['weather']['afternoon_desc']}\nZona: {p['name']}\n"
-        if(chequeo == 0):
-            pronosticoAlertas+="La ciudad ingresada no se encuentra en la base de datos o no hay pronósticos. Intente nuevamente."
-        if(provincia == ""):
-            MostrarAlertas(ubicacion,pronosticoAlertas, False)
-        else:
-            MostrarAlertas(provincia, pronosticoAlertas, False)
-    except Exception as ex:
-        messagebox.showerror("Error", ex)
+    
+    listaUrl = ObtenerURL()
+    chequeo = 0
+    provincia = ""
+    pronosticoAlertas = ""
+    if(ubicacion==""):
+        ubicacion = RetornarLocalizacion(3)
+    ubicacion = ReemplazarAcentos(ubicacion.lower())
+    for url in listaUrl:
+        for p in url:
+            if(ReemplazarAcentos(p["province"].lower()) == ubicacion or ReemplazarAcentos(p["name"].lower())==ubicacion):
+                chequeo += 1
+                provincia = p["province"]
+                if (seleccion):
+                    pronosticoAlertas+=f"Día {listaUrl.index(url)+1}\nTemperatura a la mañana: {p['weather']['morning_temp']}°C - Clima a la mañana: {p['weather']['morning_desc']}\nTemperatura a la tarde: {p['weather']['afternoon_temp']}°C - Clima a la tarde: {p['weather']['afternoon_desc']}\nZona: {p['name']}\n"
+    if(chequeo == 0):
+        pronosticoAlertas+="La ciudad ingresada no se encuentra en la base de datos o no hay pronósticos. Intente nuevamente."
+    if(provincia == ""):
+        MostrarAlertas(ubicacion,pronosticoAlertas, False)
+    else:
+        MostrarAlertas(provincia, pronosticoAlertas, False)
 
 def MostrarValoresMaximos(df, nombreColumna, tipoDato, periodo):
     '''Muestra la información basado en un dataframe, nombre de columba y período en años
     PRE: Recibe un dataframe, la columna por la cual va a buscar, el tipo de dato y el período expresado en años
     '''
-    periodo = f"{str(periodo)}Y"
-    messagebox.showinfo(message=f"{tipoDato}: {RetornarInformacionCsv(df, nombreColumna, periodo)}")
+    
+    if (ValidarNaturales(periodo) !=0):
+        periodo = f"{str(periodo)}Y"
+        messagebox.showinfo(message=f"{tipoDato}: {RetornarInformacionCsv(df, nombreColumna, periodo)}")
+    else:
+        messagebox.showerror("Error", "Ingreso invalido. Debe ingresar un numero entero mayor a 0")
 
 
 def CrearGrafico(df, ultimosAnios, tema):
     '''
     Muestra grafico con el promedio de temperaturas maximas y minimas anuales o humedad durante el periodo de tiempo especificado por (periodo).
-    PRE: Recibe un dataframe, un entero con el periodo en añis y el tema del grafico (humedad o temperatura).
+    PRE: Recibe un dataframe, un entero con el periodo en años y un booleano (True para temperaturas, False para humedad).
     POST: Grafico con los valores correspondientes del dataframe.
     '''
-    try:
-        listaAnio=[]
-        ultimosAnios=int(ultimosAnios)
-        df['Date'] = pd.to_datetime(df['Date']).dt.date
-        fechaHoy=(pd.to_datetime('today')).date()
-        listaTempMax = []
-        listaTempMin = []
-        listaHumedad = []
+    
+    listaAnio=[]
+    df['Date'] = pd.to_datetime(df['Date']).dt.date
+    fechaHoy=(pd.to_datetime('today')).date()
+    listaTempMax = []
+    listaTempMin = []
+    listaHumedad = []
+    if (ValidarNaturales(ultimosAnios) != 0):
         for i in range(ultimosAnios, -1, -1):
             fechaInicio=fechaHoy.replace(year=fechaHoy.year-i, month=1, day =1)
             fechaFin=fechaHoy.replace(year=fechaHoy.year-i, month=12, day=31)
             listaAnio.append(fechaInicio.year)
-            if(tema=="temperatura"):
+            if(tema):
                 listaTempMax.append(df.loc[((df['Date']<=fechaFin) & (df['Date']>=fechaInicio)), 'Max Temperature'].mean())
                 listaTempMin.append(df.loc[((df['Date']<=fechaFin) & (df['Date']>=fechaInicio)), 'Min Temperature'].mean())
-            elif(tema=="humedad"):
+            else:
                 listaHumedad.append(df.loc[((df['Date']<=fechaFin) & (df['Date']>=fechaInicio)), 'Relative Humidity'].mean())
-        if(tema=="temperatura"):
+        if(tema):
             dfPromedioTemp=pd.DataFrame({'Temperatura Maxima':listaTempMax, 'Temperatura Minima':listaTempMin}, index=listaAnio)
             grafico=dfPromedioTemp.plot.bar(title='Promedio de temperaturas anuales')
-        elif(tema=="humedad"):
+        else:
             dfPromedioHum=pd.DataFrame({'Promedio humedad':listaHumedad}, index=listaAnio)
             grafico=dfPromedioHum.plot.bar(title='Promedio de humedad')
+
         grafico.set_xlabel("Año")
         grafico.set_ylabel("Promedio")
         plt.show()
-    except Exception as ex:
-        messagebox.showerror("Error", ex)
+    else:
+        messagebox.showerror("Error", "Ingreso invalido. Debe ingresar un numero entero mayor a 0")
+    
 
 def SeleccionarArchivoCsv():
     '''Abre un open file dialog para que el usuario seleccione un archivo csv
@@ -345,6 +348,20 @@ def MostrarAlertasRadar():
         messagebox.showerror("Error", "Debe ingresar un archivo para procesar.")
     else:
         messagebox.showinfo("Alertas",TraerAlertasDeImagen(RecortarImagen(imagePath,[15, 555], [21, 755])))
+
+def ValidarNaturales(numero):
+    '''
+    Valida que numero sea de tipo entero y de serlo, que sea natural.
+    POST: Retorna el numero natural ingresado o 0 si el ingreso no es el adecuado.
+    '''
+    try:
+        numero=int(numero)
+        if(numero<=0):       
+            numero=0
+        return numero       
+    except ValueError:
+        return 0
+
 
 def MenuTormenta():
     '''Crea el menu principal de la aplicación utilizando la librería tkinter
@@ -382,9 +399,9 @@ def CrearVentanaEstadisticas():
     etiquetaPeriodo.pack(pady = 10)
     entradaPeriodo = tk.Entry(ventanaEstadisticas)
     entradaPeriodo.pack()
-    btn_OpcionUno = tk.Button(ventanaEstadisticas, text = "Promedio de temperaturas anuales", command = lambda:CrearGrafico(CrearCsvDataFrame(entradaArchivo.get()), entradaPeriodo.get(), 'temperatura'))
+    btn_OpcionUno = tk.Button(ventanaEstadisticas, text = "Promedio de temperaturas anuales", command = lambda:CrearGrafico(CrearCsvDataFrame(entradaArchivo.get()), entradaPeriodo.get(), True))
     btn_OpcionUno.pack(pady = 10)  
-    btn_OpcionDos = tk.Button(ventanaEstadisticas, text = "Promedio de humedad", command = lambda:CrearGrafico(CrearCsvDataFrame(entradaArchivo.get()), entradaPeriodo.get(), 'humedad'))
+    btn_OpcionDos = tk.Button(ventanaEstadisticas, text = "Promedio de humedad", command = lambda:CrearGrafico(CrearCsvDataFrame(entradaArchivo.get()), entradaPeriodo.get(), False))
     btn_OpcionDos.pack(pady = 10)  
     btn_OpcionTres = tk.Button(ventanaEstadisticas, text = "Milímetros máximos de lluvia", command= lambda : MostrarValoresMaximos(CrearCsvDataFrame(entradaArchivo.get()), 'Precipitation', 'Milímetros máximos de lluvia', entradaPeriodo.get()))
     btn_OpcionTres.pack(pady = 10)  
@@ -404,9 +421,9 @@ def CrearVentanaCiudad(soloAlertas):
     entradaCiudad = tk.Entry(ventanaCiudad)
     entradaCiudad.pack(pady = 10)
     if(soloAlertas):
-        btnBuscar = tk.Button(ventanaCiudad, text = "Buscar", command = lambda:VerPronosticoAlertas(entradaCiudad.get(), 'alertas'))
+        btnBuscar = tk.Button(ventanaCiudad, text = "Buscar", command = lambda:VerPronosticoAlertas(entradaCiudad.get(), True))
     else:
-        btnBuscar = tk.Button(ventanaCiudad, text = "Buscar", command = lambda:VerPronosticoAlertas(entradaCiudad.get(),''))
+        btnBuscar = tk.Button(ventanaCiudad, text = "Buscar", command = lambda:VerPronosticoAlertas(entradaCiudad.get(), False))
     btnBuscar.pack()
     tk.mainloop()
 
