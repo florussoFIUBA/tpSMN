@@ -74,7 +74,7 @@ def DetectarColor(colorRgb):
                 return "Tormentas de mucha lluvia"
             elif(colorRgb[2]>149 and colorRgb[1]>-1 and colorRgb[1]<101 and colorRgb[0]>149):
                 return "Tormentas fuertes con granizo"
-            elif(colorRgb[2]<=171 and colorRgb[1]>99 and colorRgb[0]<155):
+            elif(colorRgb[2]<171 and colorRgb[1]>99 and colorRgb[0]<155):
                 return "Tormentas moderadas"
             elif(colorRgb[2]>111 and colorRgb[1]<249 and colorRgb[0]<241):
                 return "Tormentas débiles"
@@ -140,7 +140,7 @@ def RetornarInformacionCsv(csvDataFrame, nombreColumna, periodo):
     csvDataFrame = csvDataFrame[csvDataFrame['Date']>=anios]
     valorMax = csvDataFrame[nombreColumna].max()
     if(not math.isnan(valorMax)):
-        return csvDataFrame[nombreColumna].max()
+        return valorMax
     else:
         return "No hay información"
 
@@ -283,7 +283,7 @@ def VerPronosticoAlertas(ubicacion, seleccion):
                     if(ReemplazarAcentos(p["province"].lower()) == ubicacion or ReemplazarAcentos(p["name"].lower())==ubicacion):
                         chequeo += 1
                         provincia = p["province"]
-                        if (seleccion):
+                        if (not seleccion):
                             pronosticoAlertas+=f"Día {listaUrl.index(url)+1}\nTemperatura a la mañana: {p['weather']['morning_temp']}°C - Clima a la mañana: {p['weather']['morning_desc']}\nTemperatura a la tarde: {p['weather']['afternoon_temp']}°C - Clima a la tarde: {p['weather']['afternoon_desc']}\nZona: {p['name']}\n"
             else:
                 messagebox.showerror("Error", ex)
@@ -436,9 +436,9 @@ def CrearVentanaCiudad(soloAlertas):
     entradaCiudad = tk.Entry(ventanaCiudad)
     entradaCiudad.pack(pady = 10)
     if(soloAlertas):
-        btnBuscar = tk.Button(ventanaCiudad, text = "Buscar", command = lambda:VerPronosticoAlertas(entradaCiudad.get(), False))
-    else:
         btnBuscar = tk.Button(ventanaCiudad, text = "Buscar", command = lambda:VerPronosticoAlertas(entradaCiudad.get(), True))
+    else:
+        btnBuscar = tk.Button(ventanaCiudad, text = "Buscar", command = lambda:VerPronosticoAlertas(entradaCiudad.get(), False))
     btnBuscar.pack()
     tk.mainloop()
 
