@@ -378,7 +378,6 @@ def ValidarNaturales(numero):
     except ValueError:
         return 0
 
-
 def MenuTormenta():
     '''Crea el menu principal de la aplicación utilizando la librería tkinter
     '''
@@ -390,7 +389,7 @@ def MenuTormenta():
     btn_OpcionUno.pack(pady = 10)    
     btn_OpcionDos = tk.Button(ventanaTormenta, text = "Listar todas las alertas", command = lambda:MostrarAlertas('0',"", True))
     btn_OpcionDos.pack(pady = 10)
-    btn_OpcionTres = tk.Button(ventanaTormenta, text = "Mostrar gráficos", command = CrearVentanaEstadisticas)
+    btn_OpcionTres = tk.Button(ventanaTormenta, text = "Mostrar gráficos y valores máximos", command = CrearVentanaEstadisticas)
     btn_OpcionTres.pack(pady = 10)
     btn_OpcionCuatro = tk.Button(ventanaTormenta, text = "Pronóstico extendido y alertas", command = lambda: CrearVentanaCiudad(False))
     btn_OpcionCuatro.pack(pady = 10)
@@ -437,9 +436,9 @@ def CrearVentanaCiudad(soloAlertas):
     entradaCiudad = tk.Entry(ventanaCiudad)
     entradaCiudad.pack(pady = 10)
     if(soloAlertas):
-        btnBuscar = tk.Button(ventanaCiudad, text = "Buscar", command = lambda:VerPronosticoAlertas(entradaCiudad.get(), True))
-    else:
         btnBuscar = tk.Button(ventanaCiudad, text = "Buscar", command = lambda:VerPronosticoAlertas(entradaCiudad.get(), False))
+    else:
+        btnBuscar = tk.Button(ventanaCiudad, text = "Buscar", command = lambda:VerPronosticoAlertas(entradaCiudad.get(), True))
     btnBuscar.pack()
     tk.mainloop()
 
