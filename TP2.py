@@ -10,11 +10,13 @@ import matplotlib.pyplot as plt
 import os
 import datetime
 import numpy as np
+import math
 from geopy.geocoders import Nominatim
 from tkinter import filedialog
 from tkinter import messagebox
 from tkinter import ttk
 from PIL import Image
+from dateutil.relativedelta import relativedelta
 
 PRONOSTICO1D = "https://ws.smn.gob.ar/map_items/forecast/1"
 PRONOSTICO2D = "https://ws.smn.gob.ar/map_items/forecast/2"
@@ -132,9 +134,15 @@ def RetornarInformacionCsv(csvDataFrame, nombreColumna, periodo):
     PRE: Recibe un dataframe, la columna por la cual va a buscar la información y el período expresado en años\n
     POST: Devuelve el valor máximo
     '''
+    fechaHoy = datetime.datetime.now()
+    anios =  datetime.datetime(fechaHoy.year+1, 1, 1) - relativedelta(years=int(periodo)+1)
     csvDataFrame['Date'] = pd.to_datetime(csvDataFrame.Date)
-    pastYears = csvDataFrame.set_index('Date').last(periodo)
-    return pastYears[nombreColumna].max()
+    csvDataFrame = csvDataFrame[csvDataFrame['Date']>=anios]
+    valorMax = csvDataFrame[nombreColumna].max()
+    if(not math.isnan(valorMax)):
+        return csvDataFrame[nombreColumna].max()
+    else:
+        return "No hay información"
 
 def RetornarLocalizacionActual():
     '''Usando la libreria geocoder, devuelve la geolocalización basada en IP (lat long).\n
@@ -293,13 +301,11 @@ def MostrarValoresMaximos(df, nombreColumna, tipoDato, periodo):
     '''
     if(not isinstance(df, Exception)):
         if (ValidarNaturales(periodo) !=0):
-            periodo = f"{str(periodo)}Y"
             messagebox.showinfo(message=f"{tipoDato}: {RetornarInformacionCsv(df, nombreColumna, periodo)}")
         else:
             messagebox.showerror("Error", "Ingreso invalido. Debe ingresar un numero entero mayor a 0")
     else:
         messagebox.showerror("Error", df)
-
 
 def CrearGrafico(df, ultimosAnios, tema):
     '''Muestra grafico con el promedio de temperaturas maximas y minimas anuales o humedad durante el periodo de tiempo especificado por (periodo).\n
@@ -339,7 +345,6 @@ def CrearGrafico(df, ultimosAnios, tema):
     else:
         messagebox.showerror("Error", df)
     
-
 def SeleccionarArchivoCsv():
     '''Abre un open file dialog para que el usuario seleccione un archivo csv\n
     POST: Retorna el path del archivo csv
